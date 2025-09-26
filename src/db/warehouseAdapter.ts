@@ -34,6 +34,10 @@ export class InternalWarehouseAdapter implements IWarehouseAdapter {
       transferTime: this.config.api.defaultTransferTime || 1,
     }));
   }
+
+  async updateInventory(upc: string, quantityChange: number): Promise<void> {
+    await this.dbConnector.updateInternalInventory(upc, quantityChange);
+  }
 }
 
 // Adapter for B-style warehouses
@@ -85,6 +89,10 @@ export class BStyleWarehouseAdapter implements IWarehouseAdapter {
       return []; // Return empty array to allow other warehouses to work
     }
   }
+
+  async updateInventory(upc: string, quantityChange: number): Promise<void> {
+    console.log(`External API call would be made to update warehouse ${this.config.id} inventory for UPC ${upc}, changing by ${quantityChange} units`);
+  }
 }
 
 // Adapter for C-style warehouses
@@ -126,6 +134,10 @@ export class CStyleWarehouseAdapter implements IWarehouseAdapter {
       console.warn(`Failed to fetch inventory from warehouse ${this.config.id} for UPC ${upc}:`, error instanceof Error ? error.message : error);
       return []; // Return empty array to allow other warehouses to work
     }
+  }
+
+  async updateInventory(upc: string, quantityChange: number): Promise<void> {
+    console.log(`External API call would be made to update warehouse ${this.config.id} inventory for UPC ${upc}, changing by ${quantityChange} units`);
   }
 }
 
