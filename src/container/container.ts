@@ -11,6 +11,10 @@ import { TimeCalculatorService } from '../services/timeCalculatorService';
 import { TransferStrategyFactory } from '../strategies/transferStrategies';
 import { TransferStrategyFactoryV2 } from '../strategies/transferStrategiesV2';
 import { CostCalculatorServiceV2, TimeCalculatorServiceV2 } from '../services/calculatorServiceV2';
+import { IValidationService, ValidationService } from '../services/validationService';
+import { IValidationServiceV2, ValidationServiceV2 } from '../services/validationServiceV2';
+import { IQueryService, QueryService } from '../services/queryService';
+import { IQueryServiceV2, QueryServiceV2 } from '../services/queryServiceV2';
 
 export class Container {
   private static instance: Container;
@@ -44,10 +48,14 @@ export class Container {
     // Business services V1
     const inventoryService = new InventoryService(warehouseFactory);
     const transferService = new TransferService(inventoryService, warehouseFactory, strategyFactory);
+    const validationService = new ValidationService();
+    const queryService = new QueryService(inventoryService);
 
     // Business services V2
     const inventoryServiceV2 = new InventoryServiceV2(warehouseRegistryService, dbProvider);
     const transferServiceV2 = new TransferServiceV2(inventoryServiceV2, strategyFactoryV2, warehouseRegistryService, dbProvider);
+    const validationServiceV2 = new ValidationServiceV2(warehouseRegistryService);
+    const queryServiceV2 = new QueryServiceV2(inventoryServiceV2, warehouseRegistryService);
 
     // Register services
     this.services.set('DBProvider', dbProvider);
@@ -60,10 +68,14 @@ export class Container {
     // V1 services
     this.services.set('InventoryService', inventoryService);
     this.services.set('TransferService', transferService);
+    this.services.set('ValidationService', validationService);
+    this.services.set('QueryService', queryService);
 
     // V2 services
     this.services.set('InventoryServiceV2', inventoryServiceV2);
     this.services.set('TransferServiceV2', transferServiceV2);
+    this.services.set('ValidationServiceV2', validationServiceV2);
+    this.services.set('QueryServiceV2', queryServiceV2);
   }
 
   get<T>(serviceName: string): T {
@@ -92,5 +104,21 @@ export class Container {
 
   getWarehouseRegistryService(): IWarehouseRegistryService {
     return this.get<IWarehouseRegistryService>('WarehouseRegistryService');
+  }
+
+  getValidationService(): IValidationService {
+    return this.get<IValidationService>('ValidationService');
+  }
+
+  getQueryService(): IQueryService {
+    return this.get<IQueryService>('QueryService');
+  }
+
+  getValidationServiceV2(): IValidationServiceV2 {
+    return this.get<IValidationServiceV2>('ValidationServiceV2');
+  }
+
+  getQueryServiceV2(): IQueryServiceV2 {
+    return this.get<IQueryServiceV2>('QueryServiceV2');
   }
 }

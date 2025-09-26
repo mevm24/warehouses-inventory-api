@@ -1,16 +1,18 @@
 // --- Refactored Express Router for N Warehouses ---
 import { Router, Request, Response } from 'express';
-import { TransferRequestV2 } from '../interfaces/general';
 import { Container } from '../container/container';
-import { IInventoryServiceV2 } from '../services/inventoryServiceV2';
 import { ITransferServiceV2 } from '../services/transferServiceV2';
 import { IWarehouseRegistryService } from '../services/warehouseRegistryService';
+import { IValidationServiceV2 } from '../services/validationServiceV2';
+import { IQueryServiceV2 } from '../services/queryServiceV2';
+import { ValidationError, NotFoundError } from '../errors/customErrors';
 
 const router = Router();
 const container = Container.getInstance();
-const inventoryServiceV2: IInventoryServiceV2 = container.getInventoryServiceV2();
 const transferServiceV2: ITransferServiceV2 = container.getTransferServiceV2();
 const warehouseRegistryService: IWarehouseRegistryService = container.getWarehouseRegistryService();
+const validationServiceV2: IValidationServiceV2 = container.getValidationServiceV2();
+const queryServiceV2: IQueryServiceV2 = container.getQueryServiceV2();
 
 /**
  * @api {get} /warehouses Get list of all registered warehouses
@@ -37,7 +39,7 @@ router.get('/:warehouseId/:query', async (req: Request, res: Response) => {
   const { warehouseId, query } = req.params;
 
   try {
-    const items = await getInventoryFromWarehouseByQuery(warehouseId, query);
+    const items = await queryServiceV2.getInventoryFromWarehouseByQuery(warehouseId, query);
     res.json(items);
   } catch (error) {
     console.error('Error fetching warehouse inventory:', error);
@@ -54,42 +56,6 @@ router.get('/:warehouseId/:query', async (req: Request, res: Response) => {
   }
 });
 
-async function getInventoryFromWarehouseByQuery(warehouseId: string, query: string) {
-  // Validate warehouse exists
-  if (!warehouseRegistryService.hasWarehouse(warehouseId)) {
-    throw new NotFoundError(`Warehouse "${warehouseId}" not found.`);
-  }
-
-  const isUPC = /^\d{8,}$/.test(query);
-
-  if (isUPC) {
-    // It's a UPC
-    if (query.length < 8) {
-      throw new ValidationError('Invalid UPC code.');
-    }
-    const items = await inventoryServiceV2.getInventoryFromWarehouse(warehouseId, query);
-
-    if (items.length === 0) {
-      throw new NotFoundError(`No inventory found for UPC "${query}" in warehouse ${warehouseId}.`);
-    }
-
-    return items;
-  } else {
-    // It's a category
-    const category = query.toLowerCase();
-    if (!['widgets', 'gadgets', 'accessories'].includes(category)) {
-      throw new NotFoundError('Invalid category.');
-    }
-
-    const items = await inventoryServiceV2.getInventoryFromWarehouse(warehouseId, undefined, category);
-
-    if (items.length === 0) {
-      throw new NotFoundError(`No items found in category "${category}" for warehouse ${warehouseId}.`);
-    }
-
-    return items;
-  }
-}
 
 /**
  * @api {get} /:query Get inventory across all warehouses
@@ -98,7 +64,7 @@ router.get('/:query', async (req: Request, res: Response) => {
   const query = req.params.query;
 
   try {
-    const allItems = await getInventoryByQueryV2(query);
+    const allItems = await queryServiceV2.getInventoryByQuery(query);
     res.json(allItems);
   } catch (error) {
     console.error('Error fetching inventory:', error);
@@ -115,65 +81,13 @@ router.get('/:query', async (req: Request, res: Response) => {
   }
 });
 
-async function getInventoryByQueryV2(query: string) {
-  const isUPC = /^\d{8,}$/.test(query);
-
-  if (isUPC) {
-    return await getInventoryByUPCV2(query);
-  } else {
-    return await getInventoryByCategoryV2(query);
-  }
-}
-
-async function getInventoryByUPCV2(upc: string) {
-  if (upc.length < 8) {
-    throw new ValidationError('Invalid UPC code.');
-  }
-
-  const items = await inventoryServiceV2.getAllInventory(upc);
-  if (items.length === 0) {
-    throw new NotFoundError(`No inventory found for UPC "${upc}".`);
-  }
-
-  return items;
-}
-
-async function getInventoryByCategoryV2(category: string) {
-  const normalizedCategory = category.toLowerCase();
-  const validCategories = ['widgets', 'gadgets', 'accessories'];
-
-  if (!validCategories.includes(normalizedCategory)) {
-    throw new NotFoundError('Invalid category.');
-  }
-
-  const items = await inventoryServiceV2.getAllInventory(undefined, normalizedCategory);
-  if (items.length === 0) {
-    throw new NotFoundError(`No items found in category "${normalizedCategory}".`);
-  }
-
-  return items;
-}
-
-class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
-
-class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'NotFoundError';
-  }
-}
 
 /**
  * @api {post} /transfer Transfer inventory between warehouses
  */
 router.post('/transfer', async (req: Request, res: Response) => {
   try {
-    const transferRequest = validateTransferRequestV2(req.body);
+    const transferRequest = validationServiceV2.validateTransferRequest(req.body);
 
     let message: string;
     if (transferRequest.from) {
@@ -198,47 +112,13 @@ router.post('/transfer', async (req: Request, res: Response) => {
   }
 });
 
-function validateTransferRequestV2(body: any): TransferRequestV2 {
-  const { from, to, UPC, quantity, rule } = body;
-  const warehouses = warehouseRegistryService.getAllWarehouses();
-  const validWarehouseIds = warehouses.map(w => w.id);
-  const validRules = ['fastest', 'cheapest'];
-
-  // Data Validation
-  if (!to || !UPC || quantity === undefined || !rule) {
-    throw new ValidationError('Missing required fields (to, UPC, quantity, rule).');
-  }
-
-  // From is optional - if not provided, system will auto-select
-  if (from && !validWarehouseIds.includes(from)) {
-    throw new ValidationError(`Invalid source warehouse. Valid options: ${validWarehouseIds.join(', ')}`);
-  }
-
-  if (!validWarehouseIds.includes(to)) {
-    throw new ValidationError(`Invalid destination warehouse. Valid options: ${validWarehouseIds.join(', ')}`);
-  }
-
-  if (from && from === to) {
-    throw new ValidationError('Source and destination warehouses cannot be the same.');
-  }
-
-  if (quantity <= 0) {
-    throw new ValidationError('Quantity must be a positive number.');
-  }
-
-  if (!validRules.includes(rule)) {
-    throw new ValidationError(`Invalid transfer rule. Valid options: ${validRules.join(', ')}`);
-  }
-
-  return { from, to, UPC, quantity, rule };
-}
 
 /**
  * @api {post} /warehouse/register Register a new warehouse
  */
 router.post('/warehouse/register', async (req: Request, res: Response) => {
   try {
-    const warehouseConfig = validateWarehouseRegistration(req.body);
+    const warehouseConfig = validationServiceV2.validateWarehouseRegistration(req.body);
     warehouseRegistryService.registerWarehouse(warehouseConfig);
 
     res.status(200).json({
@@ -261,20 +141,6 @@ router.post('/warehouse/register', async (req: Request, res: Response) => {
   }
 });
 
-function validateWarehouseRegistration(body: any) {
-  const { id, name, location, api } = body;
-
-  // Validate required fields
-  if (!id || !name || !location || !api) {
-    throw new ValidationError('Missing required fields (id, name, location, api).');
-  }
-
-  if (warehouseRegistryService.hasWarehouse(id)) {
-    throw new ValidationError(`Warehouse with ID "${id}" already exists.`);
-  }
-
-  return { id, name, location, api };
-}
 
 /**
  * @api {delete} /warehouse/:id Unregister an existing warehouse
