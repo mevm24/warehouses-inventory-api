@@ -1,0 +1,9 @@
+import { InternalInventoryItem } from "./general";
+
+export interface DBConnector {
+  // Define methods as needed for real DB connection
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  fetchInternalInventory(): Promise<InternalInventoryItem[]>;
+  updateInternalInventory(upc: string, quantityChange: number): Promise<void>;
+}
