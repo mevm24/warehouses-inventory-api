@@ -1,4 +1,4 @@
-import { InternalInventoryItem } from "./general";
+import type { InternalInventoryItem } from './core';
 
 export interface DBConnector {
   // Define methods as needed for real DB connection

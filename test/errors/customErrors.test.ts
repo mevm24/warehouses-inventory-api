@@ -1,4 +1,4 @@
-import { ValidationError, NotFoundError, ConflictError, InternalServerError } from '../../src/errors/customErrors';
+import { ConflictError, InternalServerError, NotFoundError, ValidationError } from '../../src/errors/customErrors';
 
 describe('Custom Error Classes', () => {
   describe('ValidationError', () => {
@@ -166,10 +166,10 @@ describe('Custom Error Classes', () => {
         new ValidationError('Validation failed'),
         new NotFoundError('Not found'),
         new ConflictError('Conflict'),
-        new InternalServerError('Server error')
+        new InternalServerError('Server error'),
       ];
 
-      errors.forEach(error => {
+      errors.forEach((error) => {
         expect(error instanceof Error).toBe(true);
       });
     });
@@ -258,10 +258,10 @@ describe('Custom Error Classes', () => {
         new ValidationError(''),
         new NotFoundError(''),
         new ConflictError(''),
-        new InternalServerError('')
+        new InternalServerError(''),
       ];
 
-      errors.forEach(error => {
+      errors.forEach((error) => {
         expect(error.message).toBe('');
         expect(error.name).toBeDefined();
       });

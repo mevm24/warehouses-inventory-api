@@ -1,8 +1,13 @@
 import axios from 'axios';
-import { IWarehouseAdapter, WarehouseConfig, WarehouseApiConfig } from '../interfaces/warehouse';
-import { NormalizedInventoryItemV2, WarehouseBItem, WarehouseCItem } from '../interfaces/general';
-import { DBConnector } from '../interfaces/db';
-import { CategoryClassifier } from '../utils/category';
+import type {
+  IWarehouseAdapter,
+  NormalizedInventoryItemV2,
+  WarehouseBItem,
+  WarehouseCItem,
+  WarehouseConfig,
+} from '../interfaces';
+import type { DBConnector } from '../interfaces/db';
+import { getCategoryFromLabel } from '../utils/category';
 
 export class InternalWarehouseAdapter implements IWarehouseAdapter {
   constructor(
@@ -14,13 +19,13 @@ export class InternalWarehouseAdapter implements IWarehouseAdapter {
     let items = await this.databaseConnector.fetchInternalInventory();
 
     if (upc) {
-      items = items.filter(item => item.upc === upc);
+      items = items.filter((item) => item.upc === upc);
     }
     if (category) {
-      items = items.filter(item => item.category === category);
+      items = items.filter((item) => item.category === category);
     }
 
-    return items.map(item => ({
+    return items.map((item) => ({
       source: this.warehouseConfig.id,
       upc: item.upc,
       category: item.category,
@@ -54,7 +59,7 @@ export class ExternalBStyleWarehouseAdapter implements IWarehouseAdapter {
         const inventoryResponse = await axios.get(inventoryUrl);
 
         for (const bItem of inventoryResponse.data as WarehouseBItem[]) {
-          const category = CategoryClassifier.getCategoryFromLabel(bItem.label);
+          const category = getCategoryFromLabel(bItem.label);
           items.push({
             source: this.warehouseConfig.id,
             upc: bItem.sku,
@@ -70,14 +75,18 @@ export class ExternalBStyleWarehouseAdapter implements IWarehouseAdapter {
 
       return items;
     } catch (error) {
-      console.warn(`Failed to fetch inventory from warehouse ${this.warehouseConfig.id} for UPC ${upc}:`,
-        error instanceof Error ? error.message : error);
+      console.warn(
+        `Failed to fetch inventory from warehouse ${this.warehouseConfig.id} for UPC ${upc}:`,
+        error instanceof Error ? error.message : error
+      );
       return [];
     }
   }
 
   async updateInventory(upc: string, quantityChange: number): Promise<void> {
-    console.log(`External API call would be made to update warehouse ${this.warehouseConfig.id} inventory for UPC ${upc}, changing by ${quantityChange} units`);
+    console.log(
+      `External API call would be made to update warehouse ${this.warehouseConfig.id} inventory for UPC ${upc}, changing by ${quantityChange} units`
+    );
   }
 }
 
@@ -93,7 +102,7 @@ export class ExternalCStyleWarehouseAdapter implements IWarehouseAdapter {
       const itemsResponse = await axios.get(itemsUrl);
 
       return itemsResponse.data.map((cItem: WarehouseCItem) => {
-        const category = CategoryClassifier.getCategoryFromLabel(cItem.desc);
+        const category = getCategoryFromLabel(cItem.desc);
         return {
           source: this.warehouseConfig.id,
           upc: cItem.upc,
@@ -106,14 +115,18 @@ export class ExternalCStyleWarehouseAdapter implements IWarehouseAdapter {
         };
       });
     } catch (error) {
-      console.warn(`Failed to fetch inventory from warehouse ${this.warehouseConfig.id} for UPC ${upc}:`,
-        error instanceof Error ? error.message : error);
+      console.warn(
+        `Failed to fetch inventory from warehouse ${this.warehouseConfig.id} for UPC ${upc}:`,
+        error instanceof Error ? error.message : error
+      );
       return [];
     }
   }
 
   async updateInventory(upc: string, quantityChange: number): Promise<void> {
-    console.log(`External API call would be made to update warehouse ${this.warehouseConfig.id} inventory for UPC ${upc}, changing by ${quantityChange} units`);
+    console.log(
+      `External API call would be made to update warehouse ${this.warehouseConfig.id} inventory for UPC ${upc}, changing by ${quantityChange} units`
+    );
   }
 }
 

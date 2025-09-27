@@ -1,13 +1,5 @@
 import { warehouseRegistry } from '../config/registry';
-import { WarehouseConfig } from '../interfaces/warehouse';
-
-export interface IWarehouseRegistryService {
-  getAllWarehouses(): WarehouseConfig[];
-  hasWarehouse(warehouseId: string): boolean;
-  registerWarehouse(warehouse: WarehouseConfig): void;
-  unregisterWarehouse(warehouseId: string): boolean;
-  getWarehouse(warehouseId: string): WarehouseConfig | undefined;
-}
+import type { IWarehouseRegistryService, WarehouseConfig } from '../interfaces';
 
 export class WarehouseRegistryService implements IWarehouseRegistryService {
   getAllWarehouses(): WarehouseConfig[] {

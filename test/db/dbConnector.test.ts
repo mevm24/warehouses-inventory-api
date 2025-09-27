@@ -26,12 +26,12 @@ describe('Database Connector', () => {
     it('should include specific mock items', async () => {
       const items = await fetchInternalInventory();
 
-      const superWidget = items.find(item => item.upc === '12345678');
+      const superWidget = items.find((item) => item.upc === '12345678');
       expect(superWidget).toBeDefined();
       expect(superWidget?.name).toBe('Super Widget');
       expect(superWidget?.category).toBe('widgets');
 
-      const ultraGadget = items.find(item => item.upc === '87654321');
+      const ultraGadget = items.find((item) => item.upc === '87654321');
       expect(ultraGadget).toBeDefined();
       expect(ultraGadget?.name).toBe('Ultra Gadget');
       expect(ultraGadget?.category).toBe('gadgets');
@@ -44,13 +44,13 @@ describe('Database Connector', () => {
       const quantityChange = 5;
 
       const originalInventory = await fetchInternalInventory();
-      const originalItem = originalInventory.find(item => item.upc === upc);
-      const originalQuantity = originalItem!.quantity;
+      const originalItem = originalInventory.find((item) => item.upc === upc);
+      const originalQuantity = originalItem?.quantity ?? 0;
 
       await updateInternalInventory(upc, quantityChange);
 
       const updatedInventory = await fetchInternalInventory();
-      const updatedItem = updatedInventory.find(item => item.upc === upc);
+      const updatedItem = updatedInventory.find((item) => item.upc === upc);
 
       expect(updatedItem?.quantity).toBe(originalQuantity + quantityChange);
     });
@@ -60,13 +60,13 @@ describe('Database Connector', () => {
       const quantityChange = -5;
 
       const originalInventory = await fetchInternalInventory();
-      const originalItem = originalInventory.find(item => item.upc === upc);
-      const originalQuantity = originalItem!.quantity;
+      const originalItem = originalInventory.find((item) => item.upc === upc);
+      const originalQuantity = originalItem?.quantity ?? 0;
 
       await updateInternalInventory(upc, quantityChange);
 
       const updatedInventory = await fetchInternalInventory();
-      const updatedItem = updatedInventory.find(item => item.upc === upc);
+      const updatedItem = updatedInventory.find((item) => item.upc === upc);
 
       expect(updatedItem?.quantity).toBe(originalQuantity + quantityChange);
     });
@@ -74,18 +74,16 @@ describe('Database Connector', () => {
     it('should throw error for non-existent UPC', async () => {
       const nonExistentUpc = '00000000';
 
-      await expect(
-        updateInternalInventory(nonExistentUpc, 5)
-      ).rejects.toThrow(`Item with UPC ${nonExistentUpc} not found in Internal Inventory.`);
+      await expect(updateInternalInventory(nonExistentUpc, 5)).rejects.toThrow(
+        `Item with UPC ${nonExistentUpc} not found in Internal Inventory.`
+      );
     });
 
     it('should throw error for insufficient stock', async () => {
       const upc = '99990000';
       const quantityChange = -1000; // More than available
 
-      await expect(
-        updateInternalInventory(upc, quantityChange)
-      ).rejects.toThrow(`Insufficient stock for UPC ${upc}.`);
+      await expect(updateInternalInventory(upc, quantityChange)).rejects.toThrow(`Insufficient stock for UPC ${upc}.`);
     });
 
     it('should handle zero quantity change', async () => {
@@ -93,13 +91,13 @@ describe('Database Connector', () => {
       const quantityChange = 0;
 
       const originalInventory = await fetchInternalInventory();
-      const originalItem = originalInventory.find(item => item.upc === upc);
-      const originalQuantity = originalItem!.quantity;
+      const originalItem = originalInventory.find((item) => item.upc === upc);
+      const originalQuantity = originalItem?.quantity ?? 0;
 
       await updateInternalInventory(upc, quantityChange);
 
       const updatedInventory = await fetchInternalInventory();
-      const updatedItem = updatedInventory.find(item => item.upc === upc);
+      const updatedItem = updatedInventory.find((item) => item.upc === upc);
 
       expect(updatedItem?.quantity).toBe(originalQuantity);
     });
@@ -136,21 +134,21 @@ describe('Database Connector', () => {
       const upc = '12345678';
       const quantityChange = 3;
       const originalInventory = await dbProvider.fetchInternalInventory();
-      const originalItem = originalInventory.find(item => item.upc === upc);
-      const originalQuantity = originalItem!.quantity;
+      const originalItem = originalInventory.find((item) => item.upc === upc);
+      const originalQuantity = originalItem?.quantity ?? 0;
 
       await dbProvider.updateInternalInventory(upc, quantityChange);
 
       const updatedInventory = await dbProvider.fetchInternalInventory();
-      const updatedItem = updatedInventory.find(item => item.upc === upc);
+      const updatedItem = updatedInventory.find((item) => item.upc === upc);
 
       expect(updatedItem?.quantity).toBe(originalQuantity + quantityChange);
     });
 
     it('should handle errors in class update method', async () => {
-      await expect(
-        dbProvider.updateInternalInventory('00000000', 5)
-      ).rejects.toThrow('Item with UPC 00000000 not found');
+      await expect(dbProvider.updateInternalInventory('00000000', 5)).rejects.toThrow(
+        'Item with UPC 00000000 not found'
+      );
     });
   });
 });

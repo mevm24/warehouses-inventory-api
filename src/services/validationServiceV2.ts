@@ -1,22 +1,23 @@
-import { TransferRequestV2 } from '../interfaces/general';
-import { WarehouseConfig } from '../interfaces/warehouse';
 import { ValidationError } from '../errors/customErrors';
-import { IWarehouseRegistryService } from './warehouseRegistryService';
-
-export interface IValidationServiceV2 {
-  validateTransferRequest(body: any): TransferRequestV2;
-  validateWarehouseRegistration(body: any): WarehouseConfig;
-}
+import type {
+  IValidationServiceV2,
+  IWarehouseRegistryService,
+  TransferRequestBodyV2,
+  TransferRequestV2,
+  WarehouseApiConfig,
+  WarehouseConfig,
+  WarehouseRegistrationBody,
+} from '../interfaces';
 
 export class ValidationServiceV2 implements IValidationServiceV2 {
   private readonly validRules = ['fastest', 'cheapest'];
 
   constructor(private warehouseRegistryService: IWarehouseRegistryService) {}
 
-  validateTransferRequest(body: any): TransferRequestV2 {
+  validateTransferRequest(body: TransferRequestBodyV2): TransferRequestV2 {
     const { from, to, UPC, quantity, rule } = body;
     const warehouses = this.warehouseRegistryService.getAllWarehouses();
-    const validWarehouseIds = warehouses.map(w => w.id);
+    const validWarehouseIds = warehouses.map((w) => w.id);
 
     // Data Validation
     if (!to || !UPC || quantity === undefined || !rule) {
@@ -44,10 +45,16 @@ export class ValidationServiceV2 implements IValidationServiceV2 {
       throw new ValidationError(`Invalid transfer rule. Valid options: ${this.validRules.join(', ')}`);
     }
 
-    return { from, to, UPC, quantity, rule };
+    return {
+      from,
+      to,
+      UPC,
+      quantity,
+      rule: rule as 'fastest' | 'cheapest',
+    };
   }
 
-  validateWarehouseRegistration(body: any): WarehouseConfig {
+  validateWarehouseRegistration(body: WarehouseRegistrationBody): WarehouseConfig {
     const { id, name, location, api } = body;
 
     // Validate required fields
@@ -59,6 +66,11 @@ export class ValidationServiceV2 implements IValidationServiceV2 {
       throw new ValidationError(`Warehouse with ID "${id}" already exists.`);
     }
 
-    return { id, name, location, api };
+    return {
+      id,
+      name,
+      location: location as { lat: number; long: number },
+      api: api as WarehouseApiConfig,
+    };
   }
 }

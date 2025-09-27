@@ -1,12 +1,12 @@
-import { WarehouseConfigLoader } from './warehouseLoader';
-import { WarehouseRegistry } from './warehouseRegistry';
 import { DEFAULT_WAREHOUSE_CONFIGS } from '../constants';
-import { WarehouseConfig } from '../interfaces/warehouse';
+import type { WarehouseConfig } from '../interfaces';
+import { loadWarehousesFromEnv } from './warehouseLoader';
+import { WarehouseRegistry } from './warehouseRegistry';
 
 // Create singleton instance using dynamic configuration
 let warehouseConfigs: WarehouseConfig[];
 try {
-  warehouseConfigs = WarehouseConfigLoader.loadFromEnv();
+  warehouseConfigs = loadWarehousesFromEnv();
   console.log(`✅ Loaded ${warehouseConfigs.length} warehouses from configuration file`);
 } catch (error) {
   console.warn('❌ Failed to load warehouse config file, using defaults:', error);

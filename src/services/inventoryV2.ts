@@ -1,9 +1,8 @@
-import { TransferRuleV2, NormalizedInventoryItemV2 } from '../interfaces/general';
-import { DBConnector } from '../interfaces/db';
-import { WarehouseRegistry } from '../config/warehouseRegistry';
-import { WarehouseAdapterFactory } from '../db/warehouseAdapter';
-import { IWarehouseAdapter, WarehouseConfig } from '../interfaces/warehouse';
-import { DistanceCalculator } from '../utils/distance';
+import type { WarehouseRegistry } from '../config/warehouseRegistry';
+import { createWarehouseAdapter } from '../db/warehouseAdapter';
+import type { IWarehouseAdapter, NormalizedInventoryItemV2, TransferRuleV2, WarehouseConfig } from '../interfaces';
+import type { DBConnector } from '../interfaces/db';
+import { haversineDistance } from '../utils/distance';
 
 export class InventoryProviderV2 {
   private warehouseAdapters: Map<string, IWarehouseAdapter> = new Map();
@@ -12,13 +11,13 @@ export class InventoryProviderV2 {
   private readonly DEFAULT_COST_RATES = {
     INTERNAL: 0.2,
     EXTERNAL_B: 0.7,
-    EXTERNAL_C: 0.65
+    EXTERNAL_C: 0.65,
   };
 
   private readonly DEFAULT_TIME_RATES = {
-    INTERNAL: 0.01,    // 1 hour per 100 miles
+    INTERNAL: 0.01, // 1 hour per 100 miles
     EXTERNAL_B: 0.008, // 0.8 hours per 100 miles
-    EXTERNAL_C: 0.012  // 1.2 hours per 100 miles
+    EXTERNAL_C: 0.012, // 1.2 hours per 100 miles
   };
 
   constructor(
@@ -31,7 +30,7 @@ export class InventoryProviderV2 {
   private initializeAdapters(): void {
     const warehouses = this.warehouseRegistry.getAllWarehouses();
     for (const warehouse of warehouses) {
-      const adapter = WarehouseAdapterFactory.create(warehouse, this.databaseConnector);
+      const adapter = createWarehouseAdapter(warehouse, this.databaseConnector);
       this.warehouseAdapters.set(warehouse.id, adapter);
     }
   }
@@ -40,13 +39,17 @@ export class InventoryProviderV2 {
    * Calculates the distance between two geographical points using shared utility.
    */
   private haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    return DistanceCalculator.haversineDistance(lat1, lon1, lat2, lon2);
+    return haversineDistance(lat1, lon1, lat2, lon2);
   }
 
   /**
    * Fetches inventory from a specific warehouse.
    */
-  async getInventoryFromWarehouse(warehouseId: string, upc?: string, category?: string): Promise<NormalizedInventoryItemV2[]> {
+  async getInventoryFromWarehouse(
+    warehouseId: string,
+    upc?: string,
+    category?: string
+  ): Promise<NormalizedInventoryItemV2[]> {
     const adapter = this.warehouseAdapters.get(warehouseId);
     if (!adapter) {
       throw new Error(`Warehouse ${warehouseId} not found`);
@@ -61,16 +64,17 @@ export class InventoryProviderV2 {
     const allInventory: NormalizedInventoryItemV2[] = [];
     const warehouseIds = this.warehouseRegistry.getWarehouseIds();
 
-    const promises = warehouseIds.map(id =>
-      this.getInventoryFromWarehouse(id, upc, category)
-        .catch(err => {
-          console.error(`Error fetching from warehouse ${id}:`, err);
-          return [];
-        })
+    const promises = warehouseIds.map((id) =>
+      this.getInventoryFromWarehouse(id, upc, category).catch((err) => {
+        console.error(`Error fetching from warehouse ${id}:`, err);
+        return [];
+      })
     );
 
     const results = await Promise.all(promises);
-    results.forEach(items => allInventory.push(...items));
+    for (const items of results) {
+      allInventory.push(...items);
+    }
 
     return allInventory;
   }
@@ -167,7 +171,7 @@ export class InventoryProviderV2 {
         metric = distance * this.getTimePerMile(sourceWarehouse);
         metricLabel = `Time: ${metric.toFixed(2)} hours`;
         break;
-      default:
+      default: {
         // For custom rules, use the rule function if available
         const ruleFunction = this.transferRules[rule];
         if (ruleFunction) {
@@ -178,6 +182,7 @@ export class InventoryProviderV2 {
           metric = distance * this.getCostPerMile(sourceWarehouse, item);
           metricLabel = `Metric: ${metric.toFixed(2)}`;
         }
+      }
     }
 
     return { distance, metric, metricLabel };
@@ -186,13 +191,7 @@ export class InventoryProviderV2 {
   /**
    * Performs inventory transfer between any two registered warehouses.
    */
-  async performTransfer(
-    from: string | null,
-    to: string,
-    UPC: string,
-    quantity: number,
-    rule: string
-  ): Promise<string> {
+  async performTransfer(from: string | null, to: string, UPC: string, quantity: number, rule: string): Promise<string> {
     // Validate transfer rule using the transferRules object
     if (!this.transferRules[rule]) {
       const validRules = Object.keys(this.transferRules).join(', ');
@@ -204,7 +203,10 @@ export class InventoryProviderV2 {
       throw new Error(`Destination warehouse ${to} not found`);
     }
 
-    const destWarehouse = this.warehouseRegistry.getWarehouse(to)!;
+    const destWarehouse = this.warehouseRegistry.getWarehouse(to);
+    if (!destWarehouse) {
+      throw new Error(`Destination warehouse ${to} not found`);
+    }
     const allInventory = await this.getAllInventory(UPC);
 
     if (allInventory.length === 0) {
@@ -221,16 +223,11 @@ export class InventoryProviderV2 {
       sourceWarehouseId = from;
     } else {
       // Auto-select best source warehouse based on rule
-      sourceWarehouseId = await this.selectBestSourceWarehouse(
-        allInventory,
-        to,
-        quantity,
-        rule
-      );
+      sourceWarehouseId = await this.selectBestSourceWarehouse(allInventory, to, quantity, rule);
     }
 
     // Validate stock availability
-    const sourceInventory = allInventory.filter(item => item.source === sourceWarehouseId);
+    const sourceInventory = allInventory.filter((item) => item.source === sourceWarehouseId);
     const availableQuantity = sourceInventory.reduce((sum, item) => sum + item.quantity, 0);
 
     if (availableQuantity < quantity) {
@@ -238,14 +235,12 @@ export class InventoryProviderV2 {
     }
 
     // Calculate transfer metrics
-    const sourceWarehouse = this.warehouseRegistry.getWarehouse(sourceWarehouseId)!;
+    const sourceWarehouse = this.warehouseRegistry.getWarehouse(sourceWarehouseId);
+    if (!sourceWarehouse) {
+      throw new Error(`Source warehouse ${sourceWarehouseId} not found`);
+    }
     const selectedItem = sourceInventory[0];
-    const metrics = this.calculateTransferMetrics(
-      sourceWarehouse,
-      destWarehouse,
-      selectedItem,
-      rule
-    );
+    const metrics = this.calculateTransferMetrics(sourceWarehouse, destWarehouse, selectedItem, rule);
 
     // Update inventory in the source warehouse
     if (sourceWarehouseId === 'A') {
@@ -254,7 +249,9 @@ export class InventoryProviderV2 {
     } else {
       // For external warehouses, log the operation
       // In production, this would call the external API to update their inventory
-      console.log(`External API call would be made to update warehouse ${sourceWarehouseId} inventory for UPC ${UPC}, reducing by ${quantity} units`);
+      console.log(
+        `External API call would be made to update warehouse ${sourceWarehouseId} inventory for UPC ${UPC}, reducing by ${quantity} units`
+      );
     }
 
     console.log(`Transfer completed: ${quantity} units of UPC ${UPC} from warehouse ${sourceWarehouseId} to ${to}.`);
@@ -274,16 +271,22 @@ export class InventoryProviderV2 {
     quantity: number,
     rule: string
   ): Promise<string> {
-    const destWarehouse = this.warehouseRegistry.getWarehouse(destination)!;
+    const destWarehouse = this.warehouseRegistry.getWarehouse(destination);
+    if (!destWarehouse) {
+      throw new Error(`Destination warehouse ${destination} not found`);
+    }
 
     // Group inventory by source
-    const inventoryBySource = inventory.reduce((acc, item) => {
-      if (!acc[item.source]) {
-        acc[item.source] = [];
-      }
-      acc[item.source].push(item);
-      return acc;
-    }, {} as { [key: string]: NormalizedInventoryItemV2[] });
+    const inventoryBySource = inventory.reduce(
+      (acc, item) => {
+        if (!acc[item.source]) {
+          acc[item.source] = [];
+        }
+        acc[item.source].push(item);
+        return acc;
+      },
+      {} as { [key: string]: NormalizedInventoryItemV2[] }
+    );
 
     let bestSource: string | null = null;
     let bestScore = Infinity;
@@ -296,13 +299,11 @@ export class InventoryProviderV2 {
 
       // Check if this source has enough stock
       if (totalQuantity >= quantity) {
-        const sourceWarehouse = this.warehouseRegistry.getWarehouse(sourceId)!;
-        const metrics = this.calculateTransferMetrics(
-          sourceWarehouse,
-          destWarehouse,
-          items[0],
-          rule
-        );
+        const sourceWarehouse = this.warehouseRegistry.getWarehouse(sourceId);
+        if (!sourceWarehouse) {
+          continue; // Skip this source if warehouse not found
+        }
+        const metrics = this.calculateTransferMetrics(sourceWarehouse, destWarehouse, items[0], rule);
 
         if (metrics.metric < bestScore) {
           bestScore = metrics.metric;
@@ -323,7 +324,7 @@ export class InventoryProviderV2 {
    */
   async addWarehouse(config: WarehouseConfig): Promise<void> {
     this.warehouseRegistry.addWarehouse(config);
-    const adapter = WarehouseAdapterFactory.create(config, this.databaseConnector);
+    const adapter = createWarehouseAdapter(config, this.databaseConnector);
     this.warehouseAdapters.set(config.id, adapter);
   }
 

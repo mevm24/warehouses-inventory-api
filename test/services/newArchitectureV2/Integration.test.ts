@@ -1,10 +1,10 @@
-import request from 'supertest';
 import express from 'express';
-import inventoryRoutesV2 from '../../../src/controllers/inventoryV2';
-import { authMiddleware } from '../../../src/middlewares/auth';
+import request from 'supertest';
 import { Container } from '../../../src/container/container';
-import { IWarehouseRegistryService } from '../../../src/services/warehouseRegistryService';
-import { WarehouseConfig } from '../../../src/interfaces/warehouse';
+import inventoryRoutesV2 from '../../../src/controllers/inventoryV2';
+import type { IWarehouseRegistryService } from '../../../src/interfaces';
+import type { WarehouseConfig } from '../../../src/interfaces/warehouse';
+import { authMiddleware } from '../../../src/middlewares/auth';
 
 describe('V2 Integration Tests', () => {
   let app: express.Application;
@@ -15,12 +15,12 @@ describe('V2 Integration Tests', () => {
   const testWarehouseA: WarehouseConfig = {
     id: 'TEST_A',
     name: 'Test Warehouse A',
-    location: { lat: 40.7128, long: -74.0060 },
+    location: { lat: 40.7128, long: -74.006 },
     api: {
       type: 'internal',
       defaultTransferCost: 0.25,
-      defaultTransferTime: 1
-    }
+      defaultTransferTime: 1,
+    },
   };
 
   const testWarehouseB: WarehouseConfig = {
@@ -32,11 +32,11 @@ describe('V2 Integration Tests', () => {
       baseUrl: 'http://localhost:3001',
       endpoints: {
         lookup: '/lookup',
-        inventory: '/inventory'
+        inventory: '/inventory',
       },
       defaultTransferCost: 0.8,
-      defaultTransferTime: 2
-    }
+      defaultTransferTime: 2,
+    },
   };
 
   const testWarehouseC: WarehouseConfig = {
@@ -47,11 +47,11 @@ describe('V2 Integration Tests', () => {
       type: 'external-c-style',
       baseUrl: 'http://localhost:3002',
       endpoints: {
-        items: '/api/items'
+        items: '/api/items',
       },
       defaultTransferCost: 0.65,
-      defaultTransferTime: 3
-    }
+      defaultTransferTime: 3,
+    },
   };
 
   const dynamicWarehouseX: WarehouseConfig = {
@@ -61,8 +61,8 @@ describe('V2 Integration Tests', () => {
     api: {
       type: 'internal',
       defaultTransferCost: 0.3,
-      defaultTransferTime: 1.5
-    }
+      defaultTransferTime: 1.5,
+    },
   };
 
   beforeEach(() => {
@@ -86,12 +86,12 @@ describe('V2 Integration Tests', () => {
         .send({
           id: 'DYNAMIC_WH',
           name: 'Dynamic Warehouse',
-          location: { lat: 45.5051, long: -122.6750 },
+          location: { lat: 45.5051, long: -122.675 },
           api: {
             type: 'internal',
             defaultTransferCost: 0.35,
-            defaultTransferTime: 1.2
-          }
+            defaultTransferTime: 1.2,
+          },
         });
 
       expect(registerResponse.status).toBe(200);
@@ -123,8 +123,8 @@ describe('V2 Integration Tests', () => {
         .send({
           id: 'TEMP_WH',
           name: 'Temporary Warehouse',
-          location: { lat: 33.4484, long: -112.0740 },
-          api: { type: 'internal' }
+          location: { lat: 33.4484, long: -112.074 },
+          api: { type: 'internal' },
         });
 
       // Unregister the warehouse
@@ -163,9 +163,7 @@ describe('V2 Integration Tests', () => {
     });
 
     it('should query inventory across all N warehouses', async () => {
-      const response = await request(app)
-        .get('/api/v2/inventory/12345678')
-        .set('Authorization', 'Bearer test-token');
+      const response = await request(app).get('/api/v2/inventory/12345678').set('Authorization', 'Bearer test-token');
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -199,7 +197,7 @@ describe('V2 Integration Tests', () => {
           id: 'MIXED_INTERNAL',
           name: 'Mixed Internal',
           location: { lat: 39.7392, long: -104.9903 },
-          api: { type: 'internal' }
+          api: { type: 'internal' },
         });
 
       await request(app)
@@ -211,8 +209,8 @@ describe('V2 Integration Tests', () => {
           location: { lat: 47.6062, long: -122.3321 },
           api: {
             type: 'external-b-style',
-            baseUrl: 'http://localhost:3003'
-          }
+            baseUrl: 'http://localhost:3003',
+          },
         });
 
       await request(app)
@@ -224,13 +222,11 @@ describe('V2 Integration Tests', () => {
           location: { lat: 29.7604, long: -95.3698 },
           api: {
             type: 'external-c-style',
-            baseUrl: 'http://localhost:3004'
-          }
+            baseUrl: 'http://localhost:3004',
+          },
         });
 
-      const response = await request(app)
-        .get('/api/v2/inventory/gadgets')
-        .set('Authorization', 'Bearer test-token');
+      const response = await request(app).get('/api/v2/inventory/gadgets').set('Authorization', 'Bearer test-token');
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -255,7 +251,7 @@ describe('V2 Integration Tests', () => {
           id: 'SOURCE_WH',
           name: 'Source Warehouse',
           location: { lat: 35.6762, long: 139.6503 },
-          api: { type: 'internal' }
+          api: { type: 'internal' },
         });
 
       await request(app)
@@ -265,7 +261,7 @@ describe('V2 Integration Tests', () => {
           id: 'DEST_WH',
           name: 'Destination Warehouse',
           location: { lat: 51.5074, long: -0.1278 },
-          api: { type: 'internal' }
+          api: { type: 'internal' },
         });
 
       // Attempt transfer
@@ -277,7 +273,7 @@ describe('V2 Integration Tests', () => {
           to: 'DEST_WH',
           UPC: '12345678',
           quantity: 5,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       // May succeed or fail based on inventory, but should recognize warehouses
@@ -295,11 +291,11 @@ describe('V2 Integration Tests', () => {
         .send({
           id: 'CHEAP_WH',
           name: 'Cheap Warehouse',
-          location: { lat: 40.7128, long: -74.0060 }, // Close to A
+          location: { lat: 40.7128, long: -74.006 }, // Close to A
           api: {
             type: 'internal',
-            defaultTransferCost: 0.1 // Very cheap
-          }
+            defaultTransferCost: 0.1, // Very cheap
+          },
         });
 
       await request(app)
@@ -308,11 +304,11 @@ describe('V2 Integration Tests', () => {
         .send({
           id: 'EXPENSIVE_WH',
           name: 'Expensive Warehouse',
-          location: { lat: 40.7128, long: -74.0060 }, // Same location
+          location: { lat: 40.7128, long: -74.006 }, // Same location
           api: {
             type: 'internal',
-            defaultTransferCost: 2.0 // Very expensive
-          }
+            defaultTransferCost: 2.0, // Very expensive
+          },
         });
 
       // Transfer without specifying source (auto-select)
@@ -323,7 +319,7 @@ describe('V2 Integration Tests', () => {
           to: 'TEST_A',
           UPC: '12345678',
           quantity: 1,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       // Should work if inventory exists
@@ -343,7 +339,7 @@ describe('V2 Integration Tests', () => {
           to: 'WH_X',
           UPC: '12345678',
           quantity: 2,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       expect([200, 400]).toContain(cheapestResponse.status);
@@ -356,7 +352,7 @@ describe('V2 Integration Tests', () => {
           to: 'WH_X',
           UPC: '12345678',
           quantity: 2,
-          rule: 'fastest'
+          rule: 'fastest',
         });
 
       expect([200, 400]).toContain(fastestResponse.status);
@@ -371,7 +367,7 @@ describe('V2 Integration Tests', () => {
           to: 'TEST_A',
           UPC: '12345678',
           quantity: 5,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       expect(response.status).toBe(400);
@@ -391,8 +387,8 @@ describe('V2 Integration Tests', () => {
           location: { lat: 25.7617, long: -80.1918 },
           api: {
             type: 'internal',
-            defaultTransferCost: 0.05
-          }
+            defaultTransferCost: 0.05,
+          },
         });
 
       await request(app)
@@ -405,8 +401,8 @@ describe('V2 Integration Tests', () => {
           api: {
             type: 'external-b-style',
             baseUrl: 'http://localhost:3005',
-            defaultTransferCost: 1.5
-          }
+            defaultTransferCost: 1.5,
+          },
         });
 
       // Query warehouses to verify registration
@@ -432,8 +428,8 @@ describe('V2 Integration Tests', () => {
           location: { lat: 42.3601, long: -71.0589 },
           api: {
             type: 'internal',
-            defaultTransferTime: 0.5
-          }
+            defaultTransferTime: 0.5,
+          },
         });
 
       await request(app)
@@ -446,8 +442,8 @@ describe('V2 Integration Tests', () => {
           api: {
             type: 'external-c-style',
             baseUrl: 'http://localhost:3006',
-            defaultTransferTime: 5
-          }
+            defaultTransferTime: 5,
+          },
         });
 
       const listResponse = await request(app)
@@ -472,7 +468,7 @@ describe('V2 Integration Tests', () => {
           id: 'DUPLICATE_WH',
           name: 'Duplicate Warehouse',
           location: { lat: 30.2672, long: -97.7431 },
-          api: { type: 'internal' }
+          api: { type: 'internal' },
         });
 
       // Try to register same ID again
@@ -483,7 +479,7 @@ describe('V2 Integration Tests', () => {
           id: 'DUPLICATE_WH',
           name: 'Another Name',
           location: { lat: 31.0, long: -98.0 },
-          api: { type: 'internal' }
+          api: { type: 'internal' },
         });
 
       expect(duplicateResponse.status).toBe(400);
@@ -498,7 +494,7 @@ describe('V2 Integration Tests', () => {
           to: 'NONEXISTENT_DEST',
           UPC: '12345678',
           quantity: 5,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       expect(response.status).toBe(400);
@@ -506,9 +502,7 @@ describe('V2 Integration Tests', () => {
     });
 
     it('should handle empty inventory across all warehouses', async () => {
-      const response = await request(app)
-        .get('/api/v2/inventory/99999999')
-        .set('Authorization', 'Bearer test-token');
+      const response = await request(app).get('/api/v2/inventory/99999999').set('Authorization', 'Bearer test-token');
 
       expect(response.status).toBe(404);
       expect(response.body.message).toContain('No inventory found');
@@ -533,14 +527,14 @@ describe('V2 Integration Tests', () => {
                 type: i % 3 === 0 ? 'external-b-style' : i % 3 === 1 ? 'external-c-style' : 'internal',
                 baseUrl: i % 3 !== 2 ? `http://localhost:${4000 + i}` : undefined,
                 defaultTransferCost: 0.1 + i * 0.05,
-                defaultTransferTime: 0.5 + i * 0.1
-              }
+                defaultTransferTime: 0.5 + i * 0.1,
+              },
             })
         );
       }
 
       const responses = await Promise.all(warehousePromises);
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
       });
 
@@ -560,14 +554,12 @@ describe('V2 Integration Tests', () => {
           id: `QUERY_WH_${i}`,
           name: `Query Warehouse ${i}`,
           location: { lat: 35 + i * 0.2, long: -110 - i * 0.2 },
-          api: { type: 'internal' }
+          api: { type: 'internal' },
         });
       }
 
       const startTime = Date.now();
-      const response = await request(app)
-        .get('/api/v2/inventory/widgets')
-        .set('Authorization', 'Bearer test-token');
+      const response = await request(app).get('/api/v2/inventory/widgets').set('Authorization', 'Bearer test-token');
 
       const endTime = Date.now();
       const duration = endTime - startTime;

@@ -1,6 +1,9 @@
-import { FastestTransferStrategyV2, CheapestTransferStrategyV2, TransferStrategyFactoryV2 } from '../../../src/strategies/transferStrategiesV2';
-import { ICostCalculatorV2, ITimeCalculatorV2 } from '../../../src/interfaces/servicesV2';
-import { NormalizedInventoryItemV2 } from '../../../src/interfaces/general';
+import type { ICostCalculatorV2, ITimeCalculatorV2, NormalizedInventoryItemV2 } from '../../../src/interfaces';
+import {
+  CheapestTransferStrategyV2,
+  FastestTransferStrategyV2,
+  TransferStrategyFactoryV2,
+} from '../../../src/strategies/transferStrategiesV2';
 
 describe('TransferStrategiesV2', () => {
   const mockCostCalculator: jest.Mocked<ICostCalculatorV2> = {
@@ -41,7 +44,7 @@ describe('TransferStrategiesV2', () => {
       expect(mockTimeCalculator.calculateTime).toHaveBeenCalledWith('A', 150);
       expect(result).toEqual({
         metric: 3.5,
-        label: 'Time: 3.50 hours'
+        label: 'Time: 3.50 hours',
       });
     });
 
@@ -60,7 +63,7 @@ describe('TransferStrategiesV2', () => {
 
       expect(result).toEqual({
         metric: 0,
-        label: 'Time: 0.00 hours'
+        label: 'Time: 0.00 hours',
       });
     });
   });
@@ -80,7 +83,7 @@ describe('TransferStrategiesV2', () => {
       expect(mockCostCalculator.calculateCost).toHaveBeenCalledWith('A', 150, mockItem);
       expect(result).toEqual({
         metric: 75.25,
-        label: 'Cost: $75.25'
+        label: 'Cost: $75.25',
       });
     });
 
@@ -99,7 +102,7 @@ describe('TransferStrategiesV2', () => {
 
       expect(result).toEqual({
         metric: 0,
-        label: 'Cost: $0.00'
+        label: 'Cost: $0.00',
       });
     });
 

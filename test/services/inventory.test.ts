@@ -1,6 +1,6 @@
-import { InventoryProvider } from '../../src/services/inventory';
 import { DBProvider } from '../../src/db/dbConnector';
-import { NormalizedInventoryItem } from '../../src/interfaces/general';
+import type { NormalizedInventoryItem } from '../../src/interfaces';
+import { InventoryProvider } from '../../src/services/inventory';
 import '../../src/data';
 
 describe('InventoryProvider Service', () => {
@@ -16,8 +16,10 @@ describe('InventoryProvider Service', () => {
     it('should calculate distance between two coordinates correctly', () => {
       // New York to Los Angeles
       const distance = inventoryProvider.haversineDistance(
-        40.7128, -74.0060,  // NYC
-        34.0522, -118.2437  // LA
+        40.7128,
+        -74.006, // NYC
+        34.0522,
+        -118.2437 // LA
       );
 
       // Should be approximately 2445 miles
@@ -26,10 +28,7 @@ describe('InventoryProvider Service', () => {
     });
 
     it('should return 0 for same coordinates', () => {
-      const distance = inventoryProvider.haversineDistance(
-        40.7128, -74.0060,
-        40.7128, -74.0060
-      );
+      const distance = inventoryProvider.haversineDistance(40.7128, -74.006, 40.7128, -74.006);
 
       expect(distance).toBe(0);
     });
@@ -62,19 +61,19 @@ describe('InventoryProvider Service', () => {
     it('should filter by UPC when provided', async () => {
       const items = await inventoryProvider.getInventoryFromA('12345678');
 
-      expect(items.every(item => item.upc === '12345678')).toBe(true);
+      expect(items.every((item) => item.upc === '12345678')).toBe(true);
     });
 
     it('should filter by category when provided', async () => {
       const items = await inventoryProvider.getInventoryFromA(undefined, 'widgets');
 
-      expect(items.every(item => item.category === 'widgets')).toBe(true);
+      expect(items.every((item) => item.category === 'widgets')).toBe(true);
     });
 
     it('should apply both UPC and category filters', async () => {
       const items = await inventoryProvider.getInventoryFromA('12345678', 'widgets');
 
-      expect(items.every(item => item.upc === '12345678' && item.category === 'widgets')).toBe(true);
+      expect(items.every((item) => item.upc === '12345678' && item.category === 'widgets')).toBe(true);
     });
   });
 
@@ -130,7 +129,7 @@ describe('InventoryProvider Service', () => {
 
       expect(items).toBeInstanceOf(Array);
 
-      const sources = items.map(item => item.source);
+      const sources = items.map((item) => item.source);
       expect(sources).toContain('A');
       expect(sources).toContain('B');
       expect(sources).toContain('C');
@@ -139,7 +138,7 @@ describe('InventoryProvider Service', () => {
     it('should filter by category across all warehouses', async () => {
       const items = await inventoryProvider.getAllInventory(undefined, 'widgets');
 
-      expect(items.every(item => item.category === 'widgets')).toBe(true);
+      expect(items.every((item) => item.category === 'widgets')).toBe(true);
     });
 
     it('should return empty array for non-existent UPC', async () => {
@@ -158,25 +157,23 @@ describe('InventoryProvider Service', () => {
       quantity: 10,
       locationDetails: {},
       transferCost: 5.5,
-      transferTime: 2.5
+      transferTime: 2.5,
     };
 
     it('should have fastest rule that returns transfer time', () => {
-      const rule = inventoryProvider.transferRules['fastest'];
+      const rule = inventoryProvider.transferRules.fastest;
       expect(rule(mockItem)).toBe(2.5);
     });
 
     it('should have cheapest rule that returns transfer cost', () => {
-      const rule = inventoryProvider.transferRules['cheapest'];
+      const rule = inventoryProvider.transferRules.cheapest;
       expect(rule(mockItem)).toBe(5.5);
     });
   });
 
   describe('performTransfer', () => {
     it('should successfully transfer with sufficient stock', async () => {
-      const result = await inventoryProvider.performTransfer(
-        'A', 'B', '12345678', 5, 'cheapest'
-      );
+      const result = await inventoryProvider.performTransfer('A', 'B', '12345678', 5, 'cheapest');
 
       expect(result).toContain('Transfer of 5 units');
       expect(result).toContain('completed successfully');
@@ -185,21 +182,17 @@ describe('InventoryProvider Service', () => {
     });
 
     it('should throw error for insufficient stock', async () => {
-      await expect(
-        inventoryProvider.performTransfer('A', 'B', '12345678', 1000, 'cheapest')
-      ).rejects.toThrow('Insufficient stock');
+      await expect(inventoryProvider.performTransfer('A', 'B', '12345678', 1000, 'cheapest')).rejects.toThrow(
+        'Insufficient stock'
+      );
     });
 
     it('should throw error for non-existent UPC', async () => {
-      await expect(
-        inventoryProvider.performTransfer('A', 'B', '00000000', 5, 'cheapest')
-      ).rejects.toThrow();
+      await expect(inventoryProvider.performTransfer('A', 'B', '00000000', 5, 'cheapest')).rejects.toThrow();
     });
 
     it('should work with fastest rule', async () => {
-      const result = await inventoryProvider.performTransfer(
-        'A', 'B', '12345678', 5, 'fastest'
-      );
+      const result = await inventoryProvider.performTransfer('A', 'B', '12345678', 5, 'fastest');
 
       expect(result).toContain('Transfer of 5 units');
       expect(result).toContain('completed successfully');
@@ -210,11 +203,12 @@ describe('InventoryProvider Service', () => {
 
   describe('performTransferWithNoFrom', () => {
     const validRequest = {
-      from: null as any,
+      // Testing null from value (bypassing type checking for testing error conditions)
+      from: null as unknown as WarehouseId,
       to: 'B' as const,
       UPC: '12345678',
       quantity: 5,
-      rule: 'cheapest' as const
+      rule: 'cheapest' as const,
     };
 
     it('should automatically select best source warehouse', async () => {
@@ -227,7 +221,7 @@ describe('InventoryProvider Service', () => {
     it('should use specified source when provided', async () => {
       const result = await inventoryProvider.performTransferWithNoFrom({
         ...validRequest,
-        from: 'C'
+        from: 'C',
       });
 
       expect(result).toContain('from C to B');
@@ -237,7 +231,7 @@ describe('InventoryProvider Service', () => {
       await expect(
         inventoryProvider.performTransferWithNoFrom({
           ...validRequest,
-          quantity: 10000
+          quantity: 10000,
         })
       ).rejects.toThrow('No warehouse has sufficient stock');
     });
@@ -245,7 +239,7 @@ describe('InventoryProvider Service', () => {
     it('should select based on fastest rule', async () => {
       const result = await inventoryProvider.performTransferWithNoFrom({
         ...validRequest,
-        rule: 'fastest'
+        rule: 'fastest',
       });
 
       expect(result).toContain('Transfer of 5 units');
@@ -257,11 +251,12 @@ describe('InventoryProvider Service', () => {
 
   describe('performTransferWithHaversine', () => {
     const validRequest = {
-      from: null as any,
+      // Testing null from value (bypassing type checking for testing error conditions)
+      from: null as unknown as WarehouseId,
       to: 'B' as const,
       UPC: '12345678',
       quantity: 5,
-      rule: 'cheapest' as const
+      rule: 'cheapest' as const,
     };
 
     it('should calculate transfer using haversine distance', async () => {
@@ -274,7 +269,7 @@ describe('InventoryProvider Service', () => {
     it('should use specified source when provided', async () => {
       const result = await inventoryProvider.performTransferWithNoFrom({
         ...validRequest,
-        from: 'A'
+        from: 'A',
       });
 
       expect(result).toContain('from A to B');
@@ -285,7 +280,7 @@ describe('InventoryProvider Service', () => {
         inventoryProvider.performTransferWithNoFrom({
           ...validRequest,
           from: 'A',
-          quantity: 10000
+          quantity: 10000,
         })
       ).rejects.toThrow('Insufficient stock');
     });
@@ -293,7 +288,7 @@ describe('InventoryProvider Service', () => {
     it('should work with fastest rule', async () => {
       const result = await inventoryProvider.performTransferWithNoFrom({
         ...validRequest,
-        rule: 'fastest'
+        rule: 'fastest',
       });
 
       expect(result).toContain('completed successfully');

@@ -1,11 +1,14 @@
+import type { NormalizedInventoryItem } from '../../../src/interfaces';
+import { TransferRuleType } from '../../../src/interfaces';
 import {
-  FastestTransferStrategy,
+  UnifiedCostCalculatorService,
+  UnifiedTimeCalculatorService,
+} from '../../../src/services/unifiedCalculatorService';
+import {
   CheapestTransferStrategy,
-  TransferStrategyFactory
+  FastestTransferStrategy,
+  TransferStrategyFactory,
 } from '../../../src/strategies/transferStrategies';
-import { UnifiedCostCalculatorService, UnifiedTimeCalculatorService } from '../../../src/services/unifiedCalculatorService';
-import { NormalizedInventoryItem } from '../../../src/interfaces/general';
-import { TransferRuleType } from '../../../src/types/warehouse';
 
 describe('Transfer Strategies (New Architecture)', () => {
   let costCalculator: UnifiedCostCalculatorService;
@@ -20,7 +23,7 @@ describe('Transfer Strategies (New Architecture)', () => {
     quantity: 10,
     locationDetails: {},
     transferCost: 5.0,
-    transferTime: 2.5
+    transferTime: 2.5,
   };
 
   beforeEach(() => {
@@ -96,7 +99,7 @@ describe('Transfer Strategies (New Architecture)', () => {
       const itemWithCustomRate = {
         ...mockItem,
         source: 'B' as const,
-        locationDetails: { mileageCostPerMile: 1.5 }
+        locationDetails: { mileageCostPerMile: 1.5 },
       };
       const distance = 100;
       const result = strategy.calculate(distance, itemWithCustomRate);
@@ -126,7 +129,7 @@ describe('Transfer Strategies (New Architecture)', () => {
 
     it('should allow registering custom strategies', () => {
       const customStrategy = {
-        calculate: jest.fn().mockReturnValue({ metric: 42, label: 'Custom: 42' })
+        calculate: jest.fn().mockReturnValue({ metric: 42, label: 'Custom: 42' }),
       };
 
       strategyFactory.registerStrategy('custom', customStrategy);
@@ -137,7 +140,7 @@ describe('Transfer Strategies (New Architecture)', () => {
 
     it('should maintain registered strategies', () => {
       const customStrategy = {
-        calculate: jest.fn().mockReturnValue({ metric: 100, label: 'Custom: 100' })
+        calculate: jest.fn().mockReturnValue({ metric: 100, label: 'Custom: 100' }),
       };
 
       strategyFactory.registerStrategy('priority', customStrategy);
@@ -152,10 +155,10 @@ describe('Transfer Strategies (New Architecture)', () => {
 
     it('should override existing strategies when re-registering', () => {
       const strategy1 = {
-        calculate: jest.fn().mockReturnValue({ metric: 1, label: 'First' })
+        calculate: jest.fn().mockReturnValue({ metric: 1, label: 'First' }),
       };
       const strategy2 = {
-        calculate: jest.fn().mockReturnValue({ metric: 2, label: 'Second' })
+        calculate: jest.fn().mockReturnValue({ metric: 2, label: 'Second' }),
       };
 
       strategyFactory.registerStrategy('test', strategy1);

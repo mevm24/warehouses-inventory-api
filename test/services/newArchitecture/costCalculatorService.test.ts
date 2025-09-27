@@ -1,5 +1,5 @@
+import type { NormalizedInventoryItem } from '../../../src/interfaces';
 import { UnifiedCostCalculatorService } from '../../../src/services/unifiedCalculatorService';
-import { NormalizedInventoryItem } from '../../../src/interfaces/general';
 
 describe('UnifiedCostCalculatorService (V1 Mode)', () => {
   let costCalculator: UnifiedCostCalculatorService;
@@ -33,7 +33,7 @@ describe('UnifiedCostCalculatorService (V1 Mode)', () => {
         quantity: 10,
         locationDetails: { mileageCostPerMile: 0.5 },
         transferCost: 0.5,
-        transferTime: 1
+        transferTime: 1,
       };
 
       const cost = costCalculator.calculateCost('B', distance, item);
@@ -58,7 +58,7 @@ describe('UnifiedCostCalculatorService (V1 Mode)', () => {
         quantity: 10,
         locationDetails: { transfer_fee_mile: 0.8 },
         transferCost: 0.8,
-        transferTime: 1
+        transferTime: 1,
       };
 
       const cost = costCalculator.calculateCost('C', distance, item);
@@ -96,7 +96,7 @@ describe('UnifiedCostCalculatorService (V1 Mode)', () => {
         quantity: 10,
         locationDetails: { mileageCostPerMile: 1.0 }, // Higher than default
         transferCost: 1.0,
-        transferTime: 1
+        transferTime: 1,
       };
 
       const costWithItem = costCalculator.calculateCost('B', distance, itemWithCustomRate);
@@ -117,7 +117,7 @@ describe('UnifiedCostCalculatorService (V1 Mode)', () => {
         quantity: 10,
         locationDetails: {},
         transferCost: 0.7,
-        transferTime: 1
+        transferTime: 1,
       };
 
       const cost = costCalculator.calculateCost('B', distance, itemWithoutLocationDetails);

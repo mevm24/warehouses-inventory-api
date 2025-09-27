@@ -1,6 +1,6 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { WarehouseBItem, WarehouseCItem } from '../interfaces/general';
+import type { WarehouseBItem, WarehouseCItem } from '../interfaces';
 
 /**
  * Set up a mock adapter for Axios to simulate external API calls.
@@ -10,37 +10,55 @@ export const mockAxios = new MockAdapter(axios, { delayResponse: 500 });
 
 // Mock data and API for Warehouse B
 const warehouseBInventory: WarehouseBItem[] = [
-  { sku: 'SKU1234', label: 'Super Widget', stock: 52, coords: [40.7128, -74.0060], mileageCostPerMile: 0.7 },
-  { sku: 'SKU5678', label: 'Ultra Gadget', stock: 30, coords: [34.0522, -118.2437], mileageCostPerMile: 0.8 }
+  { sku: 'SKU1234', label: 'Super Widget', stock: 52, coords: [40.7128, -74.006], mileageCostPerMile: 0.7 },
+  { sku: 'SKU5678', label: 'Ultra Gadget', stock: 30, coords: [34.0522, -118.2437], mileageCostPerMile: 0.8 },
 ];
 
 // Mock data and API for Warehouse C
 const warehouseCInventory: WarehouseCItem[] = [
   { upc: '12345678', desc: 'Widget - Super', qty: 25, position: { lat: 41.2, long: -73.7 }, transfer_fee_mile: 0.65 },
-  { upc: '98765432', desc: 'Gadget - Smart', qty: 45, position: { lat: 34.2, long: -118.5 }, transfer_fee_mile: 0.75 }
+  { upc: '98765432', desc: 'Gadget - Smart', qty: 45, position: { lat: 34.2, long: -118.5 }, transfer_fee_mile: 0.75 },
 ];
 
 // Mock data and API for Warehouse D (external-b-style)
 const warehouseDInventory: WarehouseBItem[] = [
   { sku: 'SKU9999', label: 'Premium Widget', stock: 75, coords: [47.6062, -122.3321], mileageCostPerMile: 0.5 },
   { sku: 'SKU8888', label: 'Eco Gadget', stock: 42, coords: [47.6062, -122.3321], mileageCostPerMile: 0.55 },
-  { sku: 'SKU7777', label: 'Smart Accessory', stock: 18, coords: [47.6062, -122.3321], mileageCostPerMile: 0.48 }
+  { sku: 'SKU7777', label: 'Smart Accessory', stock: 18, coords: [47.6062, -122.3321], mileageCostPerMile: 0.48 },
 ];
 
 // Mock data and API for Warehouse E (external-c-style)
 const warehouseEInventory: WarehouseCItem[] = [
-  { upc: '11111111', desc: 'Widget - Advanced', qty: 60, position: { lat: 41.8781, long: -87.6298 }, transfer_fee_mile: 0.55 },
-  { upc: '22222222', desc: 'Gadget - Professional', qty: 35, position: { lat: 41.8781, long: -87.6298 }, transfer_fee_mile: 0.58 },
-  { upc: '33333333', desc: 'Accessory - Deluxe', qty: 28, position: { lat: 41.8781, long: -87.6298 }, transfer_fee_mile: 0.52 }
+  {
+    upc: '11111111',
+    desc: 'Widget - Advanced',
+    qty: 60,
+    position: { lat: 41.8781, long: -87.6298 },
+    transfer_fee_mile: 0.55,
+  },
+  {
+    upc: '22222222',
+    desc: 'Gadget - Professional',
+    qty: 35,
+    position: { lat: 41.8781, long: -87.6298 },
+    transfer_fee_mile: 0.58,
+  },
+  {
+    upc: '33333333',
+    desc: 'Accessory - Deluxe',
+    qty: 28,
+    position: { lat: 41.8781, long: -87.6298 },
+    transfer_fee_mile: 0.52,
+  },
 ];
 
 // Mock locations for each warehouse
 export const warehouseLocations = {
   A: { lat: 34.0522, long: -118.2437 }, // Los Angeles
-  B: { lat: 40.7128, long: -74.0060 },  // New York
-  C: { lat: 41.2, long: -73.7 },        // Connecticut
+  B: { lat: 40.7128, long: -74.006 }, // New York
+  C: { lat: 41.2, long: -73.7 }, // Connecticut
   D: { lat: 47.6062, long: -122.3321 }, // Seattle
-  E: { lat: 41.8781, long: -87.6298 }   // Chicago
+  E: { lat: 41.8781, long: -87.6298 }, // Chicago
 };
 
 // Mock Warehouse B API calls
@@ -71,6 +89,3 @@ mockAxios.onGet('http://e.api/api/products?upc=11111111').reply(200, [warehouseE
 mockAxios.onGet('http://e.api/api/products?upc=22222222').reply(200, [warehouseEInventory[1]]);
 mockAxios.onGet('http://e.api/api/products?upc=33333333').reply(200, [warehouseEInventory[2]]);
 mockAxios.onAny(/^http:\/\/e\.api\/.*$/).passThrough();
-
-
-

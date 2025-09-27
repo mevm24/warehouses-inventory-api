@@ -1,34 +1,39 @@
 import axios from 'axios';
-import { NormalizedInventoryItemV2 as NormalizedInventoryItem, WarehouseBItem, WarehouseCItem } from '../interfaces/general';
-import { DBConnector } from '../interfaces/db';
-import { IWarehouseAdapter, WarehouseConfig } from '../interfaces/warehouse';
-import { CategoryClassifier } from '../utils/category';
+import type {
+  IWarehouseAdapter,
+  NormalizedInventoryItemV2 as NormalizedInventoryItem,
+  WarehouseBItem,
+  WarehouseCItem,
+  WarehouseConfig,
+} from '../interfaces';
+import type { DBConnector } from '../interfaces/db';
+import { getCategoryFromLabel } from '../utils/category';
 
 // Adapter for internal warehouse (Type A)
 export class InternalWarehouseAdapter implements IWarehouseAdapter {
   constructor(
     private config: WarehouseConfig,
     private dbConnector: DBConnector
-  ) { }
+  ) {}
 
   async getInventory(upc?: string, category?: string): Promise<NormalizedInventoryItem[]> {
     let items = await this.dbConnector.fetchInternalInventory();
 
     if (upc) {
-      items = items.filter(item => item.upc === upc);
+      items = items.filter((item) => item.upc === upc);
     }
     if (category) {
-      items = items.filter(item => item.category.toLowerCase() === category.toLowerCase());
+      items = items.filter((item) => item.category.toLowerCase() === category.toLowerCase());
     }
 
-    return items.map(item => ({
+    return items.map((item) => ({
       source: this.config.id,
       upc: item.upc,
       category: item.category,
       name: item.name,
       quantity: item.quantity,
       locationDetails: {
-        coords: [this.config.location.lat, this.config.location.long]
+        coords: [this.config.location.lat, this.config.location.long],
       },
       transferCost: this.config.api.defaultTransferCost || 0.2,
       transferTime: this.config.api.defaultTransferTime || 1,
@@ -42,10 +47,10 @@ export class InternalWarehouseAdapter implements IWarehouseAdapter {
 
 // Adapter for B-style warehouses
 export class BStyleWarehouseAdapter implements IWarehouseAdapter {
-  constructor(private config: WarehouseConfig) { }
+  constructor(private config: WarehouseConfig) {}
 
   private async getCategoryFromUPC(productLabel: string): Promise<string> {
-    return CategoryClassifier.getCategoryFromLabel(productLabel);
+    return getCategoryFromLabel(productLabel);
   }
 
   async getInventory(upc?: string, category?: string): Promise<NormalizedInventoryItem[]> {
@@ -76,7 +81,7 @@ export class BStyleWarehouseAdapter implements IWarehouseAdapter {
             locationDetails: {
               sku: bItem.sku,
               coords: bItem.coords,
-              mileageCostPerMile: bItem.mileageCostPerMile
+              mileageCostPerMile: bItem.mileageCostPerMile,
             },
             transferCost: bItem.mileageCostPerMile,
             transferTime: this.config.api.defaultTransferTime || 1.5,
@@ -85,19 +90,24 @@ export class BStyleWarehouseAdapter implements IWarehouseAdapter {
       }
       return items;
     } catch (error) {
-      console.warn(`Failed to fetch inventory from warehouse ${this.config.id} for UPC ${upc}:`, error instanceof Error ? error.message : error);
+      console.warn(
+        `Failed to fetch inventory from warehouse ${this.config.id} for UPC ${upc}:`,
+        error instanceof Error ? error.message : error
+      );
       return []; // Return empty array to allow other warehouses to work
     }
   }
 
   async updateInventory(upc: string, quantityChange: number): Promise<void> {
-    console.log(`External API call would be made to update warehouse ${this.config.id} inventory for UPC ${upc}, changing by ${quantityChange} units`);
+    console.log(
+      `External API call would be made to update warehouse ${this.config.id} inventory for UPC ${upc}, changing by ${quantityChange} units`
+    );
   }
 }
 
 // Adapter for C-style warehouses
 export class CStyleWarehouseAdapter implements IWarehouseAdapter {
-  constructor(private config: WarehouseConfig) { }
+  constructor(private config: WarehouseConfig) {}
 
   async getInventory(upc?: string, category?: string): Promise<NormalizedInventoryItem[]> {
     if (!upc) return [];
@@ -110,8 +120,8 @@ export class CStyleWarehouseAdapter implements IWarehouseAdapter {
       const cItems: WarehouseCItem[] = response.data;
 
       return cItems
-        .map(item => {
-          const itemCategory = CategoryClassifier.getCategoryFromLabel(item.desc);
+        .map((item) => {
+          const itemCategory = getCategoryFromLabel(item.desc);
 
           if (category && itemCategory !== category) return null;
 
@@ -123,39 +133,42 @@ export class CStyleWarehouseAdapter implements IWarehouseAdapter {
             quantity: item.qty,
             locationDetails: {
               position: item.position,
-              transfer_fee_mile: item.transfer_fee_mile
+              transfer_fee_mile: item.transfer_fee_mile,
             },
             transferCost: item.transfer_fee_mile,
             transferTime: this.config.api.defaultTransferTime || 2.5,
           };
         })
-        .filter(item => item !== null) as NormalizedInventoryItem[];
+        .filter((item) => item !== null) as NormalizedInventoryItem[];
     } catch (error) {
-      console.warn(`Failed to fetch inventory from warehouse ${this.config.id} for UPC ${upc}:`, error instanceof Error ? error.message : error);
+      console.warn(
+        `Failed to fetch inventory from warehouse ${this.config.id} for UPC ${upc}:`,
+        error instanceof Error ? error.message : error
+      );
       return []; // Return empty array to allow other warehouses to work
     }
   }
 
   async updateInventory(upc: string, quantityChange: number): Promise<void> {
-    console.log(`External API call would be made to update warehouse ${this.config.id} inventory for UPC ${upc}, changing by ${quantityChange} units`);
+    console.log(
+      `External API call would be made to update warehouse ${this.config.id} inventory for UPC ${upc}, changing by ${quantityChange} units`
+    );
   }
 }
 
-// Factory to create appropriate adapter based on warehouse type
-export class WarehouseAdapterFactory {
-  static create(config: WarehouseConfig, dbConnector?: DBConnector): IWarehouseAdapter {
-    switch (config.api.type) {
-      case 'internal':
-        if (!dbConnector) {
-          throw new Error('Database connector required for internal warehouse');
-        }
-        return new InternalWarehouseAdapter(config, dbConnector);
-      case 'external-b-style':
-        return new BStyleWarehouseAdapter(config);
-      case 'external-c-style':
-        return new CStyleWarehouseAdapter(config);
-      default:
-        throw new Error(`Unknown warehouse type: ${config.api.type}`);
-    }
+// Factory function to create appropriate adapter based on warehouse type
+export function createWarehouseAdapter(config: WarehouseConfig, dbConnector?: DBConnector): IWarehouseAdapter {
+  switch (config.api.type) {
+    case 'internal':
+      if (!dbConnector) {
+        throw new Error('Database connector required for internal warehouse');
+      }
+      return new InternalWarehouseAdapter(config, dbConnector);
+    case 'external-b-style':
+      return new BStyleWarehouseAdapter(config);
+    case 'external-c-style':
+      return new CStyleWarehouseAdapter(config);
+    default:
+      throw new Error(`Unknown warehouse type: ${config.api.type}`);
   }
 }

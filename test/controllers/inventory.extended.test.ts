@@ -1,9 +1,9 @@
-import request from 'supertest';
-import express from 'express';
-import inventoryRoutes from '../../src/controllers/inventory';
-import { authMiddleware } from '../../src/middlewares/auth';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
+import express from 'express';
+import request from 'supertest';
+import inventoryRoutes from '../../src/controllers/inventory';
+import { authMiddleware } from '../../src/middlewares/auth';
 
 const app = express();
 app.use(express.json());
@@ -18,39 +18,47 @@ describe('Inventory Controller Extended Tests', () => {
 
     // Setup comprehensive mock responses
     mockAxios.onPost('http://b.api/lookup/12345678').reply(200, ['SKU1234']);
-    mockAxios.onGet('http://b.api/inventory/SKU1234').reply(200, [{
-      sku: 'SKU1234',
-      label: 'Super Widget',
-      stock: 52,
-      coords: [40.7128, -74.0060],
-      mileageCostPerMile: 0.7
-    }]);
+    mockAxios.onGet('http://b.api/inventory/SKU1234').reply(200, [
+      {
+        sku: 'SKU1234',
+        label: 'Super Widget',
+        stock: 52,
+        coords: [40.7128, -74.006],
+        mileageCostPerMile: 0.7,
+      },
+    ]);
 
-    mockAxios.onGet('http://c.api/api/items?upc=12345678').reply(200, [{
-      upc: '12345678',
-      desc: 'Widget - Super',
-      qty: 25,
-      position: { lat: 41.2, long: -73.7 },
-      transfer_fee_mile: 0.65
-    }]);
+    mockAxios.onGet('http://c.api/api/items?upc=12345678').reply(200, [
+      {
+        upc: '12345678',
+        desc: 'Widget - Super',
+        qty: 25,
+        position: { lat: 41.2, long: -73.7 },
+        transfer_fee_mile: 0.65,
+      },
+    ]);
 
     // Additional UPC mocks
     mockAxios.onPost('http://b.api/lookup/87654321').reply(200, ['SKU5678']);
-    mockAxios.onGet('http://b.api/inventory/SKU5678').reply(200, [{
-      sku: 'SKU5678',
-      label: 'Ultra Gadget',
-      stock: 30,
-      coords: [40.7128, -74.0060],
-      mileageCostPerMile: 0.8
-    }]);
+    mockAxios.onGet('http://b.api/inventory/SKU5678').reply(200, [
+      {
+        sku: 'SKU5678',
+        label: 'Ultra Gadget',
+        stock: 30,
+        coords: [40.7128, -74.006],
+        mileageCostPerMile: 0.8,
+      },
+    ]);
 
-    mockAxios.onGet('http://c.api/api/items?upc=87654321').reply(200, [{
-      upc: '87654321',
-      desc: 'Gadget - Ultra',
-      qty: 15,
-      position: { lat: 41.2, long: -73.7 },
-      transfer_fee_mile: 0.75
-    }]);
+    mockAxios.onGet('http://c.api/api/items?upc=87654321').reply(200, [
+      {
+        upc: '87654321',
+        desc: 'Gadget - Ultra',
+        qty: 15,
+        position: { lat: 41.2, long: -73.7 },
+        transfer_fee_mile: 0.75,
+      },
+    ]);
   });
 
   afterEach(() => {
@@ -59,9 +67,7 @@ describe('Inventory Controller Extended Tests', () => {
 
   describe('GET /inventory/:query - Extended Coverage', () => {
     it('should handle category queries with different cases', async () => {
-      const response = await request(app)
-        .get('/api/v1/inventory/WIDGETS')
-        .set('Authorization', 'Bearer test-token');
+      const response = await request(app).get('/api/v1/inventory/WIDGETS').set('Authorization', 'Bearer test-token');
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -71,18 +77,18 @@ describe('Inventory Controller Extended Tests', () => {
       // Reset and setup fresh mock for UPC with leading zeros
       mockAxios.reset();
       mockAxios.onPost('http://b.api/lookup/0012345678').reply(200, ['SKU0012']);
-      mockAxios.onGet('http://b.api/inventory/SKU0012').reply(200, [{
-        sku: 'SKU0012',
-        label: 'Test Widget',
-        stock: 10,
-        coords: [40.7128, -74.0060],
-        mileageCostPerMile: 0.7
-      }]);
+      mockAxios.onGet('http://b.api/inventory/SKU0012').reply(200, [
+        {
+          sku: 'SKU0012',
+          label: 'Test Widget',
+          stock: 10,
+          coords: [40.7128, -74.006],
+          mileageCostPerMile: 0.7,
+        },
+      ]);
       mockAxios.onGet('http://c.api/api/items?upc=0012345678').reply(200, []);
 
-      const response = await request(app)
-        .get('/api/v1/inventory/0012345678')
-        .set('Authorization', 'Bearer test-token');
+      const response = await request(app).get('/api/v1/inventory/0012345678').set('Authorization', 'Bearer test-token');
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -101,18 +107,18 @@ describe('Inventory Controller Extended Tests', () => {
     it('should handle very long UPC codes', async () => {
       const longUPC = '1234567890123456789012345678901234567890';
       mockAxios.onPost(`http://b.api/lookup/${longUPC}`).reply(200, ['SKU-LONG']);
-      mockAxios.onGet('http://b.api/inventory/SKU-LONG').reply(200, [{
-        sku: 'SKU-LONG',
-        label: 'Long UPC Widget',
-        stock: 5,
-        coords: [40.7128, -74.0060],
-        mileageCostPerMile: 0.7
-      }]);
+      mockAxios.onGet('http://b.api/inventory/SKU-LONG').reply(200, [
+        {
+          sku: 'SKU-LONG',
+          label: 'Long UPC Widget',
+          stock: 5,
+          coords: [40.7128, -74.006],
+          mileageCostPerMile: 0.7,
+        },
+      ]);
       mockAxios.onGet(`http://c.api/api/items?upc=${longUPC}`).reply(200, []);
 
-      const response = await request(app)
-        .get(`/api/v1/inventory/${longUPC}`)
-        .set('Authorization', 'Bearer test-token');
+      const response = await request(app).get(`/api/v1/inventory/${longUPC}`).set('Authorization', 'Bearer test-token');
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -139,7 +145,7 @@ describe('Inventory Controller Extended Tests', () => {
         { from: 'B', to: 'A' },
         { from: 'B', to: 'C' },
         { from: 'C', to: 'A' },
-        { from: 'C', to: 'B' }
+        { from: 'C', to: 'B' },
       ];
 
       for (const combo of combinations) {
@@ -151,7 +157,7 @@ describe('Inventory Controller Extended Tests', () => {
             to: combo.to,
             UPC: '12345678',
             quantity: 1,
-            rule: 'cheapest'
+            rule: 'cheapest',
           });
 
         expect(response.status).toBe(200);
@@ -172,7 +178,7 @@ describe('Inventory Controller Extended Tests', () => {
             to: 'B',
             UPC: '12345678',
             quantity: 2,
-            rule: rule
+            rule: rule,
           });
 
         expect(response.status).toBe(200);
@@ -199,7 +205,7 @@ describe('Inventory Controller Extended Tests', () => {
             to: 'B',
             UPC: upc,
             quantity: 1,
-            rule: 'cheapest'
+            rule: 'cheapest',
           });
 
         expect(response.status).toBe(200);
@@ -217,7 +223,7 @@ describe('Inventory Controller Extended Tests', () => {
           to: 'B',
           UPC: '12345678',
           quantity: 0,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       expect(response1.status).toBe(400);
@@ -232,7 +238,7 @@ describe('Inventory Controller Extended Tests', () => {
           to: 'B',
           UPC: '12345678',
           quantity: -5,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       expect(response2.status).toBe(400);
@@ -251,7 +257,7 @@ describe('Inventory Controller Extended Tests', () => {
             to: 'B',
             UPC: '12345678',
             quantity: 1,
-            rule: rule
+            rule: rule,
           });
 
         expect(response.status).toBe(400);
@@ -271,7 +277,7 @@ describe('Inventory Controller Extended Tests', () => {
             to: 'B',
             UPC: '12345678',
             quantity: 1,
-            rule: 'cheapest'
+            rule: 'cheapest',
           });
 
         expect(response1.status).toBe(400);
@@ -285,7 +291,7 @@ describe('Inventory Controller Extended Tests', () => {
             to: warehouse,
             UPC: '12345678',
             quantity: 1,
-            rule: 'cheapest'
+            rule: 'cheapest',
           });
 
         expect(response2.status).toBe(400);
@@ -302,7 +308,7 @@ describe('Inventory Controller Extended Tests', () => {
           to: 'A',
           UPC: '12345678',
           quantity: 1,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       expect(response.status).toBe(400);
@@ -318,7 +324,7 @@ describe('Inventory Controller Extended Tests', () => {
           to: 'B',
           UPC: '12345678',
           quantity: 1,
-          rule: 'cheapest'
+          rule: 'cheapest',
         };
 
         delete payload[field];
@@ -342,7 +348,7 @@ describe('Inventory Controller Extended Tests', () => {
           to: 'B',
           UPC: '12345678',
           quantity: 60, // Reduced to be more than available stock but realistic
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       expect(response.status).toBe(400);
@@ -363,7 +369,7 @@ describe('Inventory Controller Extended Tests', () => {
           to: 'B',
           UPC: '12345678',
           quantity: 1,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       // The system handles the failure gracefully by returning an appropriate error response
@@ -376,22 +382,21 @@ describe('Inventory Controller Extended Tests', () => {
     });
 
     it('should handle concurrent transfer requests', async () => {
-      const requests = Array(5).fill(null).map(() =>
-        request(app)
-          .post('/api/v1/inventory/transfer')
-          .set('Authorization', 'Bearer test-token')
-          .send({
+      const requests = Array(5)
+        .fill(null)
+        .map(() =>
+          request(app).post('/api/v1/inventory/transfer').set('Authorization', 'Bearer test-token').send({
             from: 'A',
             to: 'B',
             UPC: '12345678',
             quantity: 1,
-            rule: 'cheapest'
+            rule: 'cheapest',
           })
-      );
+        );
 
       const responses = await Promise.all(requests);
 
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body.message).toContain('completed successfully');
       });
@@ -400,17 +405,14 @@ describe('Inventory Controller Extended Tests', () => {
 
   describe('Authentication and Security', () => {
     it('should reject requests without authorization header', async () => {
-      const response = await request(app)
-        .get('/api/v1/inventory/12345678');
+      const response = await request(app).get('/api/v1/inventory/12345678');
 
       expect(response.status).toBe(401);
       expect(response.body.error).toContain('Missing Authorization header');
     });
 
     it('should accept any authorization header in development', async () => {
-      const response = await request(app)
-        .get('/api/v1/inventory/99999999')
-        .set('Authorization', 'InvalidFormat');
+      const response = await request(app).get('/api/v1/inventory/99999999').set('Authorization', 'InvalidFormat');
 
       // In development, any authorization header is accepted, but may result in 500 due to processing errors
       expect([404, 500]).toContain(response.status); // Will be error code, not auth error
@@ -420,9 +422,7 @@ describe('Inventory Controller Extended Tests', () => {
       const tokens = ['test-token', 'another-token', 'random-string'];
 
       for (const token of tokens) {
-        const response = await request(app)
-          .get('/api/v1/inventory/widgets')
-          .set('Authorization', `Bearer ${token}`);
+        const response = await request(app).get('/api/v1/inventory/widgets').set('Authorization', `Bearer ${token}`);
 
         expect(response.status).toBe(200);
       }
@@ -447,7 +447,7 @@ describe('Inventory Controller Extended Tests', () => {
         UPC: 'A'.repeat(10000), // Very long UPC
         quantity: 1,
         rule: 'cheapest',
-        extraData: 'X'.repeat(50000) // Large extra data
+        extraData: 'X'.repeat(50000), // Large extra data
       };
 
       const response = await request(app)
@@ -468,7 +468,7 @@ describe('Inventory Controller Extended Tests', () => {
           to: 'B',
           UPC: 12345678, // Number instead of string
           quantity: 1,
-          rule: 'cheapest'
+          rule: 'cheapest',
         });
 
       // Should either convert to string or handle gracefully

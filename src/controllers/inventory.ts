@@ -1,10 +1,14 @@
 // --- Express Router for Inventory Endpoints ---
-import { Router, Request, Response } from 'express';
+import { type Request, type Response, Router } from 'express';
 import { Container } from '../container/container';
-import { ITransferService, IInventoryService } from '../interfaces/services';
-import { IValidationService } from '../services/validationService';
-import { ErrorHandler } from '../errors/customErrors';
-import { QueryUtils } from '../utils/queryUtils';
+import { handleError, handleTransferError } from '../errors/customErrors';
+import type { IInventoryService, ITransferService, IValidationService, NormalizedInventoryItem } from '../interfaces';
+import {
+  createCategoryNotFoundError,
+  createUPCNotFoundError,
+  validateAndClassifyQuery,
+  validateResultNotEmpty,
+} from '../utils/queryUtils';
 
 const router = Router();
 const container = Container.getInstance();
@@ -19,24 +23,23 @@ router.get('/:query', async (req: Request, res: Response) => {
   const query = req.params.query;
 
   try {
-    const { type, value } = QueryUtils.validateAndClassifyQuery(query);
+    const { type, value } = validateAndClassifyQuery(query);
 
-    let allItems;
+    let allItems: NormalizedInventoryItem[];
     if (type === 'upc') {
       allItems = await inventoryService.getAllInventory(value);
-      QueryUtils.validateResultNotEmpty(allItems, QueryUtils.createUPCNotFoundError(value));
+      validateResultNotEmpty(allItems, createUPCNotFoundError(value));
     } else {
       allItems = await inventoryService.getAllInventory(undefined, value);
-      QueryUtils.validateResultNotEmpty(allItems, QueryUtils.createCategoryNotFoundError(value));
+      validateResultNotEmpty(allItems, createCategoryNotFoundError(value));
     }
 
     res.json(allItems);
   } catch (error) {
     console.error('Error fetching inventory:', error);
-    return ErrorHandler.handleError(error, res, 'Failed to retrieve inventory.');
+    return handleError(error, res, 'Failed to retrieve inventory.');
   }
 });
-
 
 /**
  * @api {post} /transfer Transfer inventory
@@ -48,9 +51,8 @@ router.post('/transfer', async (req: Request, res: Response) => {
     res.json({ message });
   } catch (error) {
     console.error('Error during inventory transfer:', error);
-    return ErrorHandler.handleTransferError(error, res);
+    return handleTransferError(error, res);
   }
 });
-
 
 export default router;

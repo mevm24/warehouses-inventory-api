@@ -1,20 +1,28 @@
 import { DBProvider } from '../db/dbConnector';
-import { IInventoryService, ITransferService } from '../interfaces/services';
+import type {
+  IInventoryService,
+  IInventoryServiceV2,
+  ITransferService,
+  ITransferServiceV2,
+  IValidationService,
+  IValidationServiceV2,
+  IWarehouseRegistryService,
+} from '../interfaces';
 import { InventoryService } from '../services/inventoryService';
+import { InventoryServiceV2 } from '../services/inventoryServiceV2';
 import { TransferService } from '../services/transferService';
-import { IInventoryServiceV2, InventoryServiceV2 } from '../services/inventoryServiceV2';
-import { ITransferServiceV2, TransferServiceV2 } from '../services/transferServiceV2';
-import { IWarehouseRegistryService, WarehouseRegistryService } from '../services/warehouseRegistryService';
-import { WarehouseServiceFactory } from '../services/warehouseServices';
+import { TransferServiceV2 } from '../services/transferServiceV2';
 import { UnifiedCostCalculatorService, UnifiedTimeCalculatorService } from '../services/unifiedCalculatorService';
+import { ValidationService } from '../services/validationService';
+import { ValidationServiceV2 } from '../services/validationServiceV2';
+import { WarehouseRegistryService } from '../services/warehouseRegistryService';
+import { WarehouseServiceFactory } from '../services/warehouseServices';
 import { TransferStrategyFactory } from '../strategies/transferStrategies';
 import { TransferStrategyFactoryV2 } from '../strategies/transferStrategiesV2';
-import { IValidationService, ValidationService } from '../services/validationService';
-import { IValidationServiceV2, ValidationServiceV2 } from '../services/validationServiceV2';
 
 export class Container {
   private static instance: Container;
-  private services: Map<string, any> = new Map();
+  private services: Map<string, unknown> = new Map();
 
   private constructor() {
     this.setupServices();
@@ -50,7 +58,12 @@ export class Container {
 
     // Business services V2
     const inventoryServiceV2 = new InventoryServiceV2(warehouseRegistryService, dbProvider);
-    const transferServiceV2 = new TransferServiceV2(inventoryServiceV2, strategyFactoryV2, warehouseRegistryService, dbProvider);
+    const transferServiceV2 = new TransferServiceV2(
+      inventoryServiceV2,
+      strategyFactoryV2,
+      warehouseRegistryService,
+      dbProvider
+    );
     const validationServiceV2 = new ValidationServiceV2(warehouseRegistryService);
 
     // Register services

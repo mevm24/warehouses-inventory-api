@@ -1,8 +1,12 @@
+import type {
+  IInventoryService,
+  ITransferStrategy,
+  NormalizedInventoryItem,
+  TransferRequest,
+} from '../../../src/interfaces';
 import { TransferService } from '../../../src/services/transferService';
-import { IInventoryService, ITransferStrategy } from '../../../src/interfaces/services';
-import { WarehouseServiceFactory } from '../../../src/services/warehouseServices';
-import { TransferStrategyFactory } from '../../../src/strategies/transferStrategies';
-import { TransferRequest, NormalizedInventoryItem } from '../../../src/interfaces/general';
+import type { WarehouseServiceFactory } from '../../../src/services/warehouseServices';
+import type { TransferStrategyFactory } from '../../../src/strategies/transferStrategies';
 
 describe('TransferService (New Architecture)', () => {
   let transferService: TransferService;
@@ -20,7 +24,7 @@ describe('TransferService (New Architecture)', () => {
       quantity: 15,
       locationDetails: {},
       transferCost: 0.2,
-      transferTime: 1
+      transferTime: 1,
     },
     {
       source: 'B' as const,
@@ -30,42 +34,38 @@ describe('TransferService (New Architecture)', () => {
       quantity: 20,
       locationDetails: {},
       transferCost: 0.7,
-      transferTime: 1.5
-    }
+      transferTime: 1.5,
+    },
   ];
 
   beforeEach(() => {
     // Mock inventory service
     mockInventoryService = {
-      getAllInventory: jest.fn()
+      getAllInventory: jest.fn(),
     };
 
     // Mock warehouse factory and services
     const mockWarehouseService = {
       getInventory: jest.fn(),
-      updateInventory: jest.fn().mockResolvedValue(undefined)
+      updateInventory: jest.fn().mockResolvedValue(undefined),
     };
 
     mockWarehouseFactory = {
-      create: jest.fn().mockReturnValue(mockWarehouseService)
+      create: jest.fn().mockReturnValue(mockWarehouseService),
     } as any;
 
     // Mock strategy
     mockStrategy = {
-      calculate: jest.fn().mockReturnValue({ metric: 100, label: 'Cost: $100.00' })
+      calculate: jest.fn().mockReturnValue({ metric: 100, label: 'Cost: $100.00' }),
     };
 
     // Mock strategy factory
     mockStrategyFactory = {
       create: jest.fn().mockReturnValue(mockStrategy),
-      registerStrategy: jest.fn()
+      registerStrategy: jest.fn(),
     } as any;
 
-    transferService = new TransferService(
-      mockInventoryService,
-      mockWarehouseFactory,
-      mockStrategyFactory
-    );
+    transferService = new TransferService(mockInventoryService, mockWarehouseFactory, mockStrategyFactory);
   });
 
   describe('performTransfer', () => {
@@ -74,7 +74,7 @@ describe('TransferService (New Architecture)', () => {
       to: 'B',
       UPC: '12345678',
       quantity: 5,
-      rule: 'cheapest'
+      rule: 'cheapest',
     };
 
     it('should perform transfer successfully with valid request', async () => {
@@ -92,46 +92,52 @@ describe('TransferService (New Architecture)', () => {
     it('should throw error when from warehouse is missing', async () => {
       const invalidRequest = { ...validRequest, from: undefined };
 
-      await expect(transferService.performTransfer(invalidRequest as any))
-        .rejects.toThrow('Source and destination warehouses are required');
+      await expect(transferService.performTransfer(invalidRequest as any)).rejects.toThrow(
+        'Source and destination warehouses are required'
+      );
     });
 
     it('should throw error when to warehouse is missing', async () => {
       const invalidRequest = { ...validRequest, to: undefined };
 
-      await expect(transferService.performTransfer(invalidRequest as any))
-        .rejects.toThrow('Source and destination warehouses are required');
+      await expect(transferService.performTransfer(invalidRequest as any)).rejects.toThrow(
+        'Source and destination warehouses are required'
+      );
     });
 
     it('should throw error for invalid warehouse IDs', async () => {
       const invalidRequest = { ...validRequest, from: 'X' };
 
-      await expect(transferService.performTransfer(invalidRequest as any))
-        .rejects.toThrow('Invalid source or destination warehouse');
+      await expect(transferService.performTransfer(invalidRequest as any)).rejects.toThrow(
+        'Invalid source or destination warehouse'
+      );
     });
 
     it('should throw error when source equals destination', async () => {
       const invalidRequest = { ...validRequest, from: 'A', to: 'A' };
 
-      await expect(transferService.performTransfer(invalidRequest as any))
-        .rejects.toThrow('Source and destination warehouses cannot be the same');
+      await expect(transferService.performTransfer(invalidRequest as any)).rejects.toThrow(
+        'Source and destination warehouses cannot be the same'
+      );
     });
 
     it('should throw error for invalid quantity', async () => {
       const invalidRequest = { ...validRequest, quantity: 0 };
 
-      await expect(transferService.performTransfer(invalidRequest as any))
-        .rejects.toThrow('Quantity must be a positive number');
+      await expect(transferService.performTransfer(invalidRequest as any)).rejects.toThrow(
+        'Quantity must be a positive number'
+      );
     });
 
     it('should throw error for insufficient stock', async () => {
       const lowStockItems = [
-        { ...mockInventoryItems[0], quantity: 2 } // Only 2 in stock
+        { ...mockInventoryItems[0], quantity: 2 }, // Only 2 in stock
       ];
       mockInventoryService.getAllInventory.mockResolvedValue(lowStockItems);
 
-      await expect(transferService.performTransfer({ ...validRequest, quantity: 5 }))
-        .rejects.toThrow('Insufficient stock at warehouse A');
+      await expect(transferService.performTransfer({ ...validRequest, quantity: 5 })).rejects.toThrow(
+        'Insufficient stock at warehouse A'
+      );
     });
 
     it('should use correct transfer strategy', async () => {
@@ -149,7 +155,7 @@ describe('TransferService (New Architecture)', () => {
       to: 'B' as const,
       UPC: '12345678',
       quantity: 5,
-      rule: 'cheapest' as const
+      rule: 'cheapest' as const,
     };
 
     it('should select optimal source warehouse', async () => {
@@ -165,16 +171,18 @@ describe('TransferService (New Architecture)', () => {
     it('should throw error when no destination provided', async () => {
       const invalidRequest = { ...optimalRequest, to: undefined };
 
-      await expect(transferService.performOptimalTransfer(invalidRequest as any))
-        .rejects.toThrow('Destination warehouse is required');
+      await expect(transferService.performOptimalTransfer(invalidRequest as any)).rejects.toThrow(
+        'Destination warehouse is required'
+      );
     });
 
     it('should throw error when no warehouse has sufficient stock', async () => {
-      const lowStockItems = mockInventoryItems.map(item => ({ ...item, quantity: 2 }));
+      const lowStockItems = mockInventoryItems.map((item) => ({ ...item, quantity: 2 }));
       mockInventoryService.getAllInventory.mockResolvedValue(lowStockItems);
 
-      await expect(transferService.performOptimalTransfer({ ...optimalRequest, quantity: 10 }))
-        .rejects.toThrow('No warehouse has sufficient stock');
+      await expect(transferService.performOptimalTransfer({ ...optimalRequest, quantity: 10 })).rejects.toThrow(
+        'No warehouse has sufficient stock'
+      );
     });
 
     it('should exclude destination warehouse from source selection', async () => {
@@ -188,8 +196,8 @@ describe('TransferService (New Architecture)', () => {
           quantity: 50,
           locationDetails: {},
           transferCost: 0.1,
-          transferTime: 0.5
-        }
+          transferTime: 0.5,
+        },
       ];
       mockInventoryService.getAllInventory.mockResolvedValue(itemsWithDestination);
 
@@ -209,18 +217,17 @@ describe('TransferService (New Architecture)', () => {
         to: 'B',
         UPC: '12345678',
         quantity: 5,
-        rule: 'cheapest'
+        rule: 'cheapest',
       };
 
-      await expect(transferService.performTransfer(validRequest))
-        .rejects.toThrow('Database error');
+      await expect(transferService.performTransfer(validRequest)).rejects.toThrow('Database error');
     });
 
     it('should handle warehouse update errors', async () => {
       mockInventoryService.getAllInventory.mockResolvedValue(mockInventoryItems);
       const mockWarehouseService = {
         getInventory: jest.fn(),
-        updateInventory: jest.fn().mockRejectedValue(new Error('Update failed'))
+        updateInventory: jest.fn().mockRejectedValue(new Error('Update failed')),
       };
       mockWarehouseFactory.create.mockReturnValue(mockWarehouseService as any);
 
@@ -229,11 +236,10 @@ describe('TransferService (New Architecture)', () => {
         to: 'B',
         UPC: '12345678',
         quantity: 5,
-        rule: 'cheapest'
+        rule: 'cheapest',
       };
 
-      await expect(transferService.performTransfer(validRequest))
-        .rejects.toThrow('Update failed');
+      await expect(transferService.performTransfer(validRequest)).rejects.toThrow('Update failed');
     });
   });
 
@@ -246,7 +252,7 @@ describe('TransferService (New Architecture)', () => {
         to: 'B',
         UPC: '12345678',
         quantity: 5,
-        rule: 'cheapest'
+        rule: 'cheapest',
       });
 
       expect(result).toContain('Distance:');

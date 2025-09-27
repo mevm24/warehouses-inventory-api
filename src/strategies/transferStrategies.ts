@@ -1,6 +1,5 @@
-import { ITransferStrategy, ICostCalculator, ITimeCalculator } from '../interfaces/services';
-import { NormalizedInventoryItem } from '../interfaces/general';
-import { TransferRuleType } from '../types/warehouse';
+import type { ICostCalculator, ITimeCalculator, ITransferStrategy, NormalizedInventoryItem } from '../interfaces';
+import { TransferRuleType } from '../interfaces';
 
 export class FastestTransferStrategy implements ITransferStrategy {
   constructor(private timeCalculator: ITimeCalculator) {}
@@ -9,7 +8,7 @@ export class FastestTransferStrategy implements ITransferStrategy {
     const metric = this.timeCalculator.calculateTime(item.source, distance);
     return {
       metric,
-      label: `Time: ${metric.toFixed(2)} hours`
+      label: `Time: ${metric.toFixed(2)} hours`,
     };
   }
 }
@@ -21,7 +20,7 @@ export class CheapestTransferStrategy implements ITransferStrategy {
     const metric = this.costCalculator.calculateCost(item.source, distance, item);
     return {
       metric,
-      label: `Cost: $${metric.toFixed(2)}`
+      label: `Cost: $${metric.toFixed(2)}`,
     };
   }
 }
@@ -31,7 +30,7 @@ export class TransferStrategyFactory {
 
   constructor(
     private costCalculator: ICostCalculator,
-    private timeCalculator: ITimeCalculator
+    timeCalculator: ITimeCalculator
   ) {
     this.strategies.set(TransferRuleType.FASTEST, new FastestTransferStrategy(timeCalculator));
     this.strategies.set(TransferRuleType.CHEAPEST, new CheapestTransferStrategy(costCalculator));

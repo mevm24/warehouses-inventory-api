@@ -1,13 +1,13 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import 'dotenv/config'; // For environment variables
+import { warehouseRegistry } from './config/registry'; // Import singleton registry
+import { PORT } from './constants';
 import inventoryRoutes from './controllers/inventory';
 import inventoryRoutesV2 from './controllers/inventoryV2';
 import { authMiddleware } from './middlewares/auth';
 import { swaggerOptions } from './swagger';
-import { PORT } from './constants';
-import { warehouseRegistry } from './config/registry'; // Import singleton registry
 import './data/index'; // Initialize mock data and APIs
 
 // Re-export for controllers that import from index
@@ -21,7 +21,7 @@ app.use(morgan('dev')); // Logging
 app.use(authMiddleware); // Apply auth to all routes
 
 // Root route for API documentation or status check
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   res.send('Inventory API is running.');
 });
 
@@ -31,7 +31,7 @@ app.use('/api/v2/inventory', inventoryRoutesV2);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerOptions));
 
 // Generic Error Handling Middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong on the server.' });
 });

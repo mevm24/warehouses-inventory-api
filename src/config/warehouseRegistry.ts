@@ -1,10 +1,10 @@
-import { WarehouseConfig } from "../interfaces/warehouse";
+import type { WarehouseConfig } from '../interfaces';
 
 export class WarehouseRegistry {
   private warehouses: Map<string, WarehouseConfig> = new Map();
 
   constructor(configs: WarehouseConfig[]) {
-    configs.forEach(config => {
+    configs.forEach((config) => {
       this.warehouses.set(config.id, config);
     });
   }

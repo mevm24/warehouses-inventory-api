@@ -1,10 +1,14 @@
-import { ITransferService, IInventoryService } from '../interfaces/services';
-import { TransferRequest, NormalizedInventoryItem } from '../interfaces/general';
 import { WAREHOUSE_LOCATIONS } from '../constants';
-import { DistanceCalculator } from '../utils/distance';
-import { TransferStrategyFactory } from '../strategies/transferStrategies';
-import { WarehouseServiceFactory } from './warehouseServices';
-import { TransferRuleType } from '../types/warehouse';
+import type {
+  IInventoryService,
+  ITransferService,
+  NormalizedInventoryItem,
+  TransferRequest,
+  WarehouseLocation,
+} from '../interfaces';
+import type { TransferStrategyFactory } from '../strategies/transferStrategies';
+import { haversineDistance } from '../utils/distance';
+import type { WarehouseServiceFactory } from './warehouseServices';
 
 export class TransferService implements ITransferService {
   constructor(
@@ -23,7 +27,7 @@ export class TransferService implements ITransferService {
     this.validateTransferRequest(from, to, quantity);
 
     const allInventory = await this.inventoryService.getAllInventory(UPC);
-    const sourceInventory = allInventory.filter(item => item.source === from);
+    const sourceInventory = allInventory.filter((item) => item.source === from);
 
     this.validateStockAvailability(sourceInventory, quantity, from);
 
@@ -47,7 +51,14 @@ export class TransferService implements ITransferService {
       throw new Error('No warehouse has sufficient stock to fulfill the request.');
     }
 
-    const transferResult = await this.executeTransfer(optimalSource.warehouse, to, UPC, quantity, rule, optimalSource.item);
+    const transferResult = await this.executeTransfer(
+      optimalSource.warehouse,
+      to,
+      UPC,
+      quantity,
+      rule,
+      optimalSource.item
+    );
     return transferResult;
   }
 
@@ -80,7 +91,7 @@ export class TransferService implements ITransferService {
     destination: string,
     quantity: number,
     rule: string,
-    destinationLocation: any
+    destinationLocation: WarehouseLocation
   ): { warehouse: string; item: NormalizedInventoryItem } | null {
     const inventoryBySource = this.groupInventoryBySource(allInventory);
     let bestScore = Infinity;
@@ -109,14 +120,19 @@ export class TransferService implements ITransferService {
       if (!acc.has(item.source)) {
         acc.set(item.source, []);
       }
-      acc.get(item.source)!.push(item);
+      acc.get(item.source)?.push(item);
       return acc;
     }, new Map<string, NormalizedInventoryItem[]>());
   }
 
-  private calculateTransferScore(source: string, destinationLocation: any, rule: string, item: NormalizedInventoryItem): number {
+  private calculateTransferScore(
+    source: string,
+    destinationLocation: WarehouseLocation,
+    rule: string,
+    item: NormalizedInventoryItem
+  ): number {
     const sourceLocation = WAREHOUSE_LOCATIONS[source as 'A' | 'B' | 'C'];
-    const distance = DistanceCalculator.haversineDistance(
+    const distance = haversineDistance(
       sourceLocation.lat,
       sourceLocation.long,
       destinationLocation.lat,
@@ -139,7 +155,7 @@ export class TransferService implements ITransferService {
     const sourceLocation = WAREHOUSE_LOCATIONS[from as 'A' | 'B' | 'C'];
     const destinationLocation = WAREHOUSE_LOCATIONS[to as 'A' | 'B' | 'C'];
 
-    const distance = DistanceCalculator.haversineDistance(
+    const distance = haversineDistance(
       sourceLocation.lat,
       sourceLocation.long,
       destinationLocation.lat,

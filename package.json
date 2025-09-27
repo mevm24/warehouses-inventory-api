@@ -9,7 +9,13 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:verbose": "jest --verbose"
+    "test:verbose": "jest --verbose",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format .",
+    "format:fix": "biome format --write .",
+    "check": "biome check . && npm run build && npm test",
+    "ci": "biome ci ."
   },
   "dependencies": {
     "axios": "^1.6.2",
@@ -19,6 +25,7 @@
     "swagger-ui-express": "^4.6.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
     "@types/express": "^4.17.21",
     "@types/jest": "^30.0.0",
     "@types/morgan": "^1.9.9",

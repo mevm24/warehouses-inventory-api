@@ -1,5 +1,5 @@
-import { InternalInventoryItem } from "../interfaces/general";
-import { DBConnector } from "../interfaces/db";
+import type { InternalInventoryItem } from '../interfaces';
+import type { DBConnector } from '../interfaces/db';
 
 // Internal Warehouse A (mock database)
 const internalInventory: InternalInventoryItem[] = [
@@ -19,7 +19,7 @@ export const fetchInternalInventory = async (): Promise<InternalInventoryItem[]>
 export const updateInternalInventory = async (upc: string, quantityChange: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      const item = internalInventory.find(i => i.upc === upc);
+      const item = internalInventory.find((i) => i.upc === upc);
       if (!item) {
         return reject(new Error(`Item with UPC ${upc} not found in Internal Inventory.`));
       }

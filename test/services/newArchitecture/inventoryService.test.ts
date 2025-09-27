@@ -1,7 +1,7 @@
+import { DBProvider } from '../../../src/db/dbConnector';
+import type { IWarehouseService } from '../../../src/interfaces/services';
 import { InventoryService } from '../../../src/services/inventoryService';
 import { WarehouseServiceFactory } from '../../../src/services/warehouseServices';
-import { DBProvider } from '../../../src/db/dbConnector';
-import { IWarehouseService } from '../../../src/interfaces/services';
 import '../../../src/data';
 
 describe('InventoryService (New Architecture)', () => {
@@ -15,30 +15,34 @@ describe('InventoryService (New Architecture)', () => {
     // Create mock warehouse services
     mockWarehouseA = {
       getInventory: jest.fn(),
-      updateInventory: jest.fn()
+      updateInventory: jest.fn(),
     };
 
     mockWarehouseB = {
       getInventory: jest.fn(),
-      updateInventory: jest.fn()
+      updateInventory: jest.fn(),
     };
 
     mockWarehouseC = {
       getInventory: jest.fn(),
-      updateInventory: jest.fn()
+      updateInventory: jest.fn(),
     };
 
     // Mock the warehouse factory
     warehouseFactory = {
       create: jest.fn().mockImplementation((warehouseId: string) => {
         switch (warehouseId) {
-          case 'A': return mockWarehouseA;
-          case 'B': return mockWarehouseB;
-          case 'C': return mockWarehouseC;
-          default: throw new Error(`Unknown warehouse: ${warehouseId}`);
+          case 'A':
+            return mockWarehouseA;
+          case 'B':
+            return mockWarehouseB;
+          case 'C':
+            return mockWarehouseC;
+          default:
+            throw new Error(`Unknown warehouse: ${warehouseId}`);
         }
-      })
-    } as any;
+      }),
+    } as unknown as WarehouseServiceFactory;
 
     inventoryService = new InventoryService(warehouseFactory);
   });
@@ -47,13 +51,40 @@ describe('InventoryService (New Architecture)', () => {
     it('should aggregate inventory from all warehouses', async () => {
       // Setup mock responses
       const mockItemsA = [
-        { source: 'A' as const, upc: '12345678', category: 'widgets', name: 'Widget A', quantity: 10, locationDetails: {}, transferCost: 0.2, transferTime: 1 }
+        {
+          source: 'A' as const,
+          upc: '12345678',
+          category: 'widgets',
+          name: 'Widget A',
+          quantity: 10,
+          locationDetails: {},
+          transferCost: 0.2,
+          transferTime: 1,
+        },
       ];
       const mockItemsB = [
-        { source: 'B' as const, upc: '12345678', category: 'widgets', name: 'Widget B', quantity: 5, locationDetails: {}, transferCost: 0.7, transferTime: 1.5 }
+        {
+          source: 'B' as const,
+          upc: '12345678',
+          category: 'widgets',
+          name: 'Widget B',
+          quantity: 5,
+          locationDetails: {},
+          transferCost: 0.7,
+          transferTime: 1.5,
+        },
       ];
       const mockItemsC = [
-        { source: 'C' as const, upc: '12345678', category: 'widgets', name: 'Widget C', quantity: 8, locationDetails: {}, transferCost: 0.65, transferTime: 2.5 }
+        {
+          source: 'C' as const,
+          upc: '12345678',
+          category: 'widgets',
+          name: 'Widget C',
+          quantity: 8,
+          locationDetails: {},
+          transferCost: 0.65,
+          transferTime: 2.5,
+        },
       ];
 
       mockWarehouseA.getInventory.mockResolvedValue(mockItemsA);
@@ -93,7 +124,16 @@ describe('InventoryService (New Architecture)', () => {
 
     it('should handle warehouse errors gracefully', async () => {
       mockWarehouseA.getInventory.mockResolvedValue([
-        { source: 'A' as const, upc: '12345678', category: 'widgets', name: 'Widget A', quantity: 10, locationDetails: {}, transferCost: 0.2, transferTime: 1 }
+        {
+          source: 'A' as const,
+          upc: '12345678',
+          category: 'widgets',
+          name: 'Widget A',
+          quantity: 10,
+          locationDetails: {},
+          transferCost: 0.2,
+          transferTime: 1,
+        },
       ]);
       mockWarehouseB.getInventory.mockRejectedValue(new Error('Network error'));
       mockWarehouseC.getInventory.mockResolvedValue([]);
@@ -106,15 +146,9 @@ describe('InventoryService (New Architecture)', () => {
       const startTime = Date.now();
 
       // Add delays to mock responses to test parallelization
-      mockWarehouseA.getInventory.mockImplementation(() =>
-        new Promise(resolve => setTimeout(() => resolve([]), 50))
-      );
-      mockWarehouseB.getInventory.mockImplementation(() =>
-        new Promise(resolve => setTimeout(() => resolve([]), 50))
-      );
-      mockWarehouseC.getInventory.mockImplementation(() =>
-        new Promise(resolve => setTimeout(() => resolve([]), 50))
-      );
+      mockWarehouseA.getInventory.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve([]), 50)));
+      mockWarehouseB.getInventory.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve([]), 50)));
+      mockWarehouseC.getInventory.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve([]), 50)));
 
       await inventoryService.getAllInventory('12345678');
 
@@ -134,7 +168,7 @@ describe('InventoryService (New Architecture)', () => {
 
       expect(result).toBeInstanceOf(Array);
       expect(result.length).toBeGreaterThan(0);
-      expect(result.some(item => item.source === 'A')).toBe(true);
+      expect(result.some((item) => item.source === 'A')).toBe(true);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { PORT } from "../constants";
+import { PORT } from '../constants';
 
 export const swaggerOptions = {
   swaggerDefinition: {

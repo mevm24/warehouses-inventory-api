@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
   // Simple stub: expect Authorization: Bearer <token>
   const auth = req.headers?.authorization;

@@ -1,8 +1,8 @@
-import { InventoryProviderV2 } from '../../src/services/inventoryV2';
-import { DBProvider } from '../../src/db/dbConnector';
 import { WarehouseRegistry } from '../../src/config/warehouseRegistry';
-import { NormalizedInventoryItemV2, TransferRequestV2 } from '../../src/interfaces/general';
-import { WarehouseConfig } from '../../src/interfaces/warehouse';
+import { DBProvider } from '../../src/db/dbConnector';
+import type { NormalizedInventoryItemV2 } from '../../src/interfaces';
+import type { WarehouseConfig } from '../../src/interfaces/warehouse';
+import { InventoryProviderV2 } from '../../src/services/inventoryV2';
 import '../../src/data';
 
 describe('InventoryProviderV2 Service', () => {
@@ -15,19 +15,19 @@ describe('InventoryProviderV2 Service', () => {
       id: 'A',
       name: 'Internal Warehouse',
       location: { lat: 34.0522, long: -118.2437 },
-      api: { type: 'internal', defaultTransferCost: 0.2, defaultTransferTime: 1 }
+      api: { type: 'internal', defaultTransferCost: 0.2, defaultTransferTime: 1 },
     },
     {
       id: 'B',
       name: 'Partner Warehouse B',
-      location: { lat: 40.7128, long: -74.0060 },
+      location: { lat: 40.7128, long: -74.006 },
       api: {
         type: 'external-b-style',
         baseUrl: 'http://b.api',
         endpoints: { lookup: '/lookup', inventory: '/inventory' },
         defaultTransferCost: 0.7,
-        defaultTransferTime: 1.5
-      }
+        defaultTransferTime: 1.5,
+      },
     },
     {
       id: 'D',
@@ -38,8 +38,8 @@ describe('InventoryProviderV2 Service', () => {
         baseUrl: 'http://d.api',
         endpoints: { lookup: '/lookup', inventory: '/inventory' },
         defaultTransferCost: 0.5,
-        defaultTransferTime: 1.2
-      }
+        defaultTransferTime: 1.2,
+      },
     },
     {
       id: 'E',
@@ -50,9 +50,9 @@ describe('InventoryProviderV2 Service', () => {
         baseUrl: 'http://e.api',
         endpoints: { categories: '/api/categories', items: '/api/products' },
         defaultTransferCost: 0.55,
-        defaultTransferTime: 2.0
-      }
-    }
+        defaultTransferTime: 2.0,
+      },
+    },
   ];
 
   beforeEach(() => {
@@ -76,8 +76,10 @@ describe('InventoryProviderV2 Service', () => {
     it('should calculate distance between two coordinates correctly', () => {
       // Access private method through any
       const distance = (inventoryProvider as any).haversineDistance(
-        40.7128, -74.0060,  // NYC
-        34.0522, -118.2437  // LA
+        40.7128,
+        -74.006, // NYC
+        34.0522,
+        -118.2437 // LA
       );
 
       expect(distance).toBeGreaterThan(2400);
@@ -85,10 +87,7 @@ describe('InventoryProviderV2 Service', () => {
     });
 
     it('should return 0 for same coordinates', () => {
-      const distance = (inventoryProvider as any).haversineDistance(
-        40.7128, -74.0060,
-        40.7128, -74.0060
-      );
+      const distance = (inventoryProvider as any).haversineDistance(40.7128, -74.006, 40.7128, -74.006);
 
       expect(distance).toBe(0);
     });
@@ -138,9 +137,7 @@ describe('InventoryProviderV2 Service', () => {
     });
 
     it('should throw error for non-existent warehouse', async () => {
-      await expect(
-        inventoryProvider.getInventoryFromWarehouse('X')
-      ).rejects.toThrow('Warehouse X not found');
+      await expect(inventoryProvider.getInventoryFromWarehouse('X')).rejects.toThrow('Warehouse X not found');
     });
   });
 
@@ -150,7 +147,7 @@ describe('InventoryProviderV2 Service', () => {
 
       expect(items).toBeInstanceOf(Array);
 
-      const sources = items.map(item => item.source);
+      const sources = items.map((item) => item.source);
       expect(sources).toContain('A');
     });
 
@@ -159,7 +156,7 @@ describe('InventoryProviderV2 Service', () => {
 
       expect(items).toBeInstanceOf(Array);
       if (items.length > 0) {
-        expect(items.every(item => item.category === 'widgets')).toBe(true);
+        expect(items.every((item) => item.category === 'widgets')).toBe(true);
       }
     });
 
@@ -172,7 +169,7 @@ describe('InventoryProviderV2 Service', () => {
 
   describe('calculateTransferMetrics', () => {
     const sourceWarehouse = mockWarehouses[0]; // A
-    const destWarehouse = mockWarehouses[1];   // B
+    const destWarehouse = mockWarehouses[1]; // B
     const mockItem: NormalizedInventoryItemV2 = {
       source: 'A',
       upc: '12345678',
@@ -181,12 +178,15 @@ describe('InventoryProviderV2 Service', () => {
       quantity: 10,
       locationDetails: { mileageCostPerMile: 0.5 },
       transferCost: 5.0,
-      transferTime: 2.0
+      transferTime: 2.0,
     };
 
     it('should calculate cost metric for cheapest rule', () => {
       const metrics = (inventoryProvider as any).calculateTransferMetrics(
-        sourceWarehouse, destWarehouse, mockItem, 'cheapest'
+        sourceWarehouse,
+        destWarehouse,
+        mockItem,
+        'cheapest'
       );
 
       expect(metrics.metric).toBeGreaterThan(0);
@@ -196,7 +196,10 @@ describe('InventoryProviderV2 Service', () => {
 
     it('should calculate time metric for fastest rule', () => {
       const metrics = (inventoryProvider as any).calculateTransferMetrics(
-        sourceWarehouse, destWarehouse, mockItem, 'fastest'
+        sourceWarehouse,
+        destWarehouse,
+        mockItem,
+        'fastest'
       );
 
       expect(metrics.metric).toBeGreaterThan(0);
@@ -207,7 +210,10 @@ describe('InventoryProviderV2 Service', () => {
 
     it('should use rule function for custom rules', () => {
       const metrics = (inventoryProvider as any).calculateTransferMetrics(
-        sourceWarehouse, destWarehouse, mockItem, 'custom'
+        sourceWarehouse,
+        destWarehouse,
+        mockItem,
+        'custom'
       );
 
       expect(metrics.metric).toBeDefined();
@@ -218,9 +224,7 @@ describe('InventoryProviderV2 Service', () => {
 
   describe('performTransfer', () => {
     it('should successfully transfer with sufficient stock', async () => {
-      const result = await inventoryProvider.performTransfer(
-        'A', 'B', '12345678', 5, 'cheapest'
-      );
+      const result = await inventoryProvider.performTransfer('A', 'B', '12345678', 5, 'cheapest');
 
       expect(result).toContain('Transfer of 5 units');
       expect(result).toContain('completed successfully');
@@ -229,9 +233,7 @@ describe('InventoryProviderV2 Service', () => {
     });
 
     it('should auto-select source warehouse when from is null', async () => {
-      const result = await inventoryProvider.performTransfer(
-        null, 'B', '12345678', 5, 'cheapest'
-      );
+      const result = await inventoryProvider.performTransfer(null, 'B', '12345678', 5, 'cheapest');
 
       expect(result).toContain('Transfer of 5 units');
       expect(result).toContain('completed successfully');
@@ -240,27 +242,25 @@ describe('InventoryProviderV2 Service', () => {
     });
 
     it('should throw error for non-existent destination warehouse', async () => {
-      await expect(
-        inventoryProvider.performTransfer('A', 'X', '12345678', 5, 'cheapest')
-      ).rejects.toThrow('Destination warehouse X not found');
+      await expect(inventoryProvider.performTransfer('A', 'X', '12345678', 5, 'cheapest')).rejects.toThrow(
+        'Destination warehouse X not found'
+      );
     });
 
     it('should throw error for non-existent source warehouse', async () => {
-      await expect(
-        inventoryProvider.performTransfer('X', 'B', '12345678', 5, 'cheapest')
-      ).rejects.toThrow('Source warehouse X not found');
+      await expect(inventoryProvider.performTransfer('X', 'B', '12345678', 5, 'cheapest')).rejects.toThrow(
+        'Source warehouse X not found'
+      );
     });
 
     it('should throw error for non-existent UPC', async () => {
-      await expect(
-        inventoryProvider.performTransfer('A', 'B', '99999999', 5, 'cheapest')
-      ).rejects.toThrow('No inventory found for UPC 99999999');
+      await expect(inventoryProvider.performTransfer('A', 'B', '99999999', 5, 'cheapest')).rejects.toThrow(
+        'No inventory found for UPC 99999999'
+      );
     });
 
     it('should work with fastest rule', async () => {
-      const result = await inventoryProvider.performTransfer(
-        'A', 'B', '12345678', 5, 'fastest'
-      );
+      const result = await inventoryProvider.performTransfer('A', 'B', '12345678', 5, 'fastest');
 
       expect(result).toContain('Transfer of 5 units');
       expect(result).toContain('completed successfully');
@@ -279,7 +279,7 @@ describe('InventoryProviderV2 Service', () => {
         quantity: 10,
         locationDetails: {},
         transferCost: 5.0,
-        transferTime: 2.0
+        transferTime: 2.0,
       },
       {
         source: 'B',
@@ -289,39 +289,31 @@ describe('InventoryProviderV2 Service', () => {
         quantity: 15,
         locationDetails: {},
         transferCost: 7.0,
-        transferTime: 3.0
-      }
+        transferTime: 3.0,
+      },
     ];
 
     it('should select best source based on cheapest rule', async () => {
-      const bestSource = await (inventoryProvider as any).selectBestSourceWarehouse(
-        mockInventory, 'D', 5, 'cheapest'
-      );
+      const bestSource = await (inventoryProvider as any).selectBestSourceWarehouse(mockInventory, 'D', 5, 'cheapest');
 
       expect(['A', 'B']).toContain(bestSource);
     });
 
     it('should select best source based on fastest rule', async () => {
-      const bestSource = await (inventoryProvider as any).selectBestSourceWarehouse(
-        mockInventory, 'D', 5, 'fastest'
-      );
+      const bestSource = await (inventoryProvider as any).selectBestSourceWarehouse(mockInventory, 'D', 5, 'fastest');
 
       expect(['A', 'B']).toContain(bestSource);
     });
 
     it('should exclude destination warehouse as source', async () => {
-      const bestSource = await (inventoryProvider as any).selectBestSourceWarehouse(
-        mockInventory, 'A', 5, 'cheapest'
-      );
+      const bestSource = await (inventoryProvider as any).selectBestSourceWarehouse(mockInventory, 'A', 5, 'cheapest');
 
       expect(bestSource).toBe('B');
     });
 
     it('should throw error when no warehouse has sufficient stock', async () => {
       await expect(
-        (inventoryProvider as any).selectBestSourceWarehouse(
-          mockInventory, 'D', 100, 'cheapest'
-        )
+        (inventoryProvider as any).selectBestSourceWarehouse(mockInventory, 'D', 100, 'cheapest')
       ).rejects.toThrow('No warehouse has sufficient stock');
     });
   });
@@ -331,7 +323,7 @@ describe('InventoryProviderV2 Service', () => {
       id: 'F',
       name: 'New Warehouse',
       location: { lat: 35.0, long: -80.0 },
-      api: { type: 'internal', defaultTransferCost: 0.3, defaultTransferTime: 1.0 }
+      api: { type: 'internal', defaultTransferCost: 0.3, defaultTransferTime: 1.0 },
     };
 
     it('should add new warehouse', async () => {
@@ -369,22 +361,22 @@ describe('InventoryProviderV2 Service', () => {
       quantity: 10,
       locationDetails: {},
       transferCost: 5.5,
-      transferTime: 2.5
+      transferTime: 2.5,
     };
 
     it('should have fastest rule that returns transfer time', () => {
-      const rule = inventoryProvider.transferRules['fastest'];
+      const rule = inventoryProvider.transferRules.fastest;
       expect(rule(mockItem)).toBe(2.5);
     });
 
     it('should have cheapest rule that returns transfer cost', () => {
-      const rule = inventoryProvider.transferRules['cheapest'];
+      const rule = inventoryProvider.transferRules.cheapest;
       expect(rule(mockItem)).toBe(5.5);
     });
 
     it('should be extensible with new rules', () => {
-      inventoryProvider.transferRules['test'] = (item) => item.quantity;
-      const rule = inventoryProvider.transferRules['test'];
+      inventoryProvider.transferRules.test = (item) => item.quantity;
+      const rule = inventoryProvider.transferRules.test;
       expect(rule(mockItem)).toBe(10);
     });
   });

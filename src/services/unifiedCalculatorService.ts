@@ -1,12 +1,21 @@
-import { ICostCalculator, ITimeCalculator } from '../interfaces/services';
-import { ICostCalculatorV2, ITimeCalculatorV2 } from '../interfaces/servicesV2';
-import { NormalizedInventoryItem, NormalizedInventoryItemV2 } from '../interfaces/general';
-import { IWarehouseRegistryService } from './warehouseRegistryService';
+import type {
+  ICostCalculator,
+  ICostCalculatorV2,
+  ITimeCalculator,
+  ITimeCalculatorV2,
+  IWarehouseRegistryService,
+  NormalizedInventoryItem,
+  NormalizedInventoryItemV2,
+} from '../interfaces';
 
 export class UnifiedCostCalculatorService implements ICostCalculator, ICostCalculatorV2 {
   constructor(private warehouseRegistry?: IWarehouseRegistryService) {}
 
-  calculateCost(warehouse: string, distance: number, item?: NormalizedInventoryItem | NormalizedInventoryItemV2): number {
+  calculateCost(
+    warehouse: string,
+    distance: number,
+    item?: NormalizedInventoryItem | NormalizedInventoryItemV2
+  ): number {
     const costPerMile = this.getCostPerMile(warehouse, item);
     return distance * costPerMile;
   }
@@ -23,7 +32,7 @@ export class UnifiedCostCalculatorService implements ICostCalculator, ICostCalcu
     const COST_RATES = {
       A: 0.2,
       B_DEFAULT: 0.7,
-      C_DEFAULT: 0.65
+      C_DEFAULT: 0.65,
     };
 
     switch (warehouse) {
@@ -39,7 +48,7 @@ export class UnifiedCostCalculatorService implements ICostCalculator, ICostCalcu
   }
 
   private getCostPerMileV2(warehouse: string, item?: NormalizedInventoryItemV2): number {
-    const warehouseConfig = this.warehouseRegistry!.getWarehouse(warehouse);
+    const warehouseConfig = this.warehouseRegistry?.getWarehouse(warehouse);
 
     if (!warehouseConfig) {
       return 0.5; // Default cost per mile for unknown warehouses
@@ -84,7 +93,7 @@ export class UnifiedTimeCalculatorService implements ITimeCalculator, ITimeCalcu
     const TIME_RATES = {
       A: 0.01,
       B: 0.008,
-      C: 0.012
+      C: 0.012,
     };
 
     const timePerMile = this.getTimePerMileV1(warehouse, TIME_RATES);
@@ -105,7 +114,7 @@ export class UnifiedTimeCalculatorService implements ITimeCalculator, ITimeCalcu
   }
 
   private calculateTimeV2(warehouse: string, distance: number): number {
-    const warehouseConfig = this.warehouseRegistry!.getWarehouse(warehouse);
+    const warehouseConfig = this.warehouseRegistry?.getWarehouse(warehouse);
 
     if (!warehouseConfig) {
       return distance / 30; // Default: 30 mph for unknown warehouses
@@ -114,7 +123,7 @@ export class UnifiedTimeCalculatorService implements ITimeCalculator, ITimeCalcu
     // Use warehouse default time
     if (warehouseConfig.api.defaultTransferTime) {
       const baseTime = warehouseConfig.api.defaultTransferTime;
-      return baseTime + (distance / 30); // Base time + travel time at 30 mph
+      return baseTime + distance / 30; // Base time + travel time at 30 mph
     }
 
     // Fallback based on warehouse type
@@ -122,9 +131,9 @@ export class UnifiedTimeCalculatorService implements ITimeCalculator, ITimeCalcu
       case 'internal':
         return distance / 60; // 60 mph (fast internal processing)
       case 'external-b-style':
-        return 1 + (distance / 30); // 1 hour processing + 30 mph travel
+        return 1 + distance / 30; // 1 hour processing + 30 mph travel
       case 'external-c-style':
-        return 2 + (distance / 25); // 2 hours processing + 25 mph travel
+        return 2 + distance / 25; // 2 hours processing + 25 mph travel
       default:
         return distance / 30; // Default 30 mph
     }

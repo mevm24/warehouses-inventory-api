@@ -1,5 +1,5 @@
-import { ValidationService } from '../../../src/services/validationService';
 import { ValidationError } from '../../../src/errors/customErrors';
+import { ValidationService } from '../../../src/services/validationService';
 
 describe('ValidationService', () => {
   let validationService: ValidationService;
@@ -14,7 +14,7 @@ describe('ValidationService', () => {
       to: 'B',
       UPC: '12345678',
       quantity: 5,
-      rule: 'cheapest'
+      rule: 'cheapest',
     };
 
     it('should validate a correct transfer request', () => {
@@ -25,107 +25,97 @@ describe('ValidationService', () => {
         to: 'B',
         UPC: '12345678',
         quantity: 5,
-        rule: 'cheapest'
+        rule: 'cheapest',
       });
     });
 
     it('should throw ValidationError when from is missing', () => {
       const invalidRequest = { ...validRequest, from: undefined };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Missing required fields.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow('Missing required fields.');
     });
 
     it('should throw ValidationError when to is missing', () => {
       const invalidRequest = { ...validRequest, to: undefined };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Missing required fields.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow('Missing required fields.');
     });
 
     it('should throw ValidationError when UPC is missing', () => {
       const invalidRequest = { ...validRequest, UPC: undefined };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Missing required fields.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow('Missing required fields.');
     });
 
     it('should throw ValidationError when quantity is undefined', () => {
       const invalidRequest = { ...validRequest, quantity: undefined };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Missing required fields.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow('Missing required fields.');
     });
 
     it('should throw ValidationError when rule is missing', () => {
       const invalidRequest = { ...validRequest, rule: undefined };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Missing required fields.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow('Missing required fields.');
     });
 
     it('should throw ValidationError for invalid source warehouse', () => {
       const invalidRequest = { ...validRequest, from: 'INVALID' };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Invalid source or destination warehouse.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(
+        'Invalid source or destination warehouse.'
+      );
     });
 
     it('should throw ValidationError for invalid destination warehouse', () => {
       const invalidRequest = { ...validRequest, to: 'INVALID' };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Invalid source or destination warehouse.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(
+        'Invalid source or destination warehouse.'
+      );
     });
 
     it('should throw ValidationError when source and destination are the same', () => {
       const invalidRequest = { ...validRequest, from: 'A', to: 'A' };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Source and destination warehouses cannot be the same.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(
+        'Source and destination warehouses cannot be the same.'
+      );
     });
 
     it('should throw ValidationError for zero quantity', () => {
       const invalidRequest = { ...validRequest, quantity: 0 };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Quantity must be a positive number.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(
+        'Quantity must be a positive number.'
+      );
     });
 
     it('should throw ValidationError for negative quantity', () => {
       const invalidRequest = { ...validRequest, quantity: -5 };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Quantity must be a positive number.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(
+        'Quantity must be a positive number.'
+      );
     });
 
     it('should throw ValidationError for invalid transfer rule', () => {
       const invalidRequest = { ...validRequest, rule: 'invalid_rule' };
 
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow(ValidationError);
-      expect(() => validationService.validateTransferRequest(invalidRequest))
-        .toThrow('Invalid transfer rule. Must be one of: fastest, cheapest.');
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(ValidationError);
+      expect(() => validationService.validateTransferRequest(invalidRequest)).toThrow(
+        'Invalid transfer rule. Must be one of: fastest, cheapest.'
+      );
     });
 
     it('should accept fastest rule', () => {
@@ -149,7 +139,7 @@ describe('ValidationService', () => {
         { from: 'B', to: 'A' },
         { from: 'B', to: 'C' },
         { from: 'C', to: 'A' },
-        { from: 'C', to: 'B' }
+        { from: 'C', to: 'B' },
       ];
 
       warehouseTests.forEach(({ from, to }) => {

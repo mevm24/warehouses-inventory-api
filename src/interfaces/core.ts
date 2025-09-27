@@ -1,4 +1,4 @@
-// --- Type Definitions for the Inventory API ---
+// === Core Data Models ===
 
 /**
  * Represents an inventory item in the internal (A) warehouse.
@@ -33,6 +33,18 @@ export interface WarehouseCItem {
 }
 
 /**
+ * Location details that vary by warehouse type
+ */
+export interface LocationDetails {
+  coords?: [number, number]; // Used by warehouses A and B
+  sku?: string; // Used by warehouse B
+  mileageCostPerMile?: number; // Used by warehouse B
+  position?: { lat: number; long: number }; // Used by warehouse C
+  transfer_fee_mile?: number; // Used by warehouse C
+  [key: string]: unknown; // Allow additional properties for flexibility
+}
+
+/**
  * Represents a single normalized inventory item from any warehouse.
  * This is the common data structure used across the application.
  */
@@ -42,7 +54,7 @@ export interface NormalizedInventoryItem {
   category: string;
   name: string;
   quantity: number;
-  locationDetails: any;
+  locationDetails: LocationDetails;
   transferCost: number;
   transferTime: number;
 }
@@ -56,44 +68,26 @@ export interface NormalizedInventoryItemV2 {
   category: string;
   name: string;
   quantity: number;
-  locationDetails: any;
+  locationDetails: LocationDetails;
   transferCost: number;
   transferTime: number;
-}
-
-/**
- * Represents the structure of an inventory transfer request.
- */
-export interface TransferRequest {
-  from: 'A' | 'B' | 'C' | undefined; // Warehouse ID (V1 compatible)
-  to: 'A' | 'B' | 'C' | undefined; // Warehouse ID (V1 compatible)
-  UPC: string;
-  quantity: number;
-  rule: 'fastest' | 'cheapest';
-}
-
-/**
- * V2 version with support for N warehouses
- */
-export interface TransferRequestV2 {
-  from: string | undefined; // Warehouse ID (supports any warehouse)
-  to: string | undefined; // Warehouse ID (supports any warehouse)
-  UPC: string;
-  quantity: number;
-  rule: 'fastest' | 'cheapest';
 }
 
 /**
  * A type definition for a transfer rule function.
  * This makes the `transferRules` object type-safe.
  */
-export interface TransferRule {
-  (item: NormalizedInventoryItem): number;
-}
+export type TransferRule = (item: NormalizedInventoryItem) => number;
 
 /**
  * V2 version for N warehouses
  */
-export interface TransferRuleV2 {
-  (item: NormalizedInventoryItemV2): number;
+export type TransferRuleV2 = (item: NormalizedInventoryItemV2) => number;
+
+/**
+ * Query validation result
+ */
+export interface QueryValidationResult {
+  type: 'upc' | 'category';
+  value: string;
 }

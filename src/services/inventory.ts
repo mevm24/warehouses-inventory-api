@@ -1,10 +1,16 @@
 // --- Core Business Logic for Inventory Management ---
 import axios from 'axios';
-import { TransferRule, NormalizedInventoryItem, WarehouseCItem, WarehouseBItem, TransferRequest } from '../interfaces/general';
 import { WAREHOUSE_LOCATIONS } from '../constants';
-import { DBConnector } from '../interfaces/db';
-import { DistanceCalculator } from '../utils/distance';
-import { CategoryClassifier } from '../utils/category';
+import type {
+  NormalizedInventoryItem,
+  TransferRequest,
+  TransferRule,
+  WarehouseBItem,
+  WarehouseCItem,
+} from '../interfaces';
+import type { DBConnector } from '../interfaces/db';
+import { getCategoryFromLabel } from '../utils/category';
+import { haversineDistance } from '../utils/distance';
 
 export class InventoryProvider {
   private databaseConnector: DBConnector;
@@ -13,14 +19,14 @@ export class InventoryProvider {
   private readonly COST_RATES = {
     A: 0.2,
     B_DEFAULT: 0.7,
-    C_DEFAULT: 0.65
+    C_DEFAULT: 0.65,
   };
 
   // Warehouse-specific time rates (hours per mile) - extracted as constants
   private readonly TIME_RATES = {
     A: 0.01,
     B: 0.008,
-    C: 0.012
+    C: 0.012,
   };
 
   constructor(databaseConnector: DBConnector) {
@@ -74,7 +80,7 @@ export class InventoryProvider {
         metric = distance * this.getTimePerMile(warehouse);
         label = `Time: ${metric.toFixed(2)} hours`;
         break;
-      default:
+      default: {
         // For custom rules, use the rule function if available
         const ruleFunction = this.transferRules[rule];
         if (ruleFunction && item) {
@@ -85,6 +91,7 @@ export class InventoryProvider {
           metric = distance * this.getCostPerMile(warehouse, item);
           label = `Metric: ${metric.toFixed(2)}`;
         }
+      }
     }
 
     return { metric, label };
@@ -95,15 +102,15 @@ export class InventoryProvider {
    * Delegates to shared utility for consistency across the application.
    */
   haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    return DistanceCalculator.haversineDistance(lat1, lon1, lat2, lon2);
-  };
+    return haversineDistance(lat1, lon1, lat2, lon2);
+  }
 
   /**
    * Gets category based on product name using shared classifier.
    */
   async getCategoryFromUPC(productLabel: string): Promise<string> {
-    return CategoryClassifier.getCategoryFromLabel(productLabel);
-  };
+    return getCategoryFromLabel(productLabel);
+  }
 
   /**
    * Fetches inventory from Warehouse A (internal mock database).
@@ -111,13 +118,13 @@ export class InventoryProvider {
   async getInventoryFromA(upc?: string, category?: string): Promise<NormalizedInventoryItem[]> {
     let items = await this.databaseConnector.fetchInternalInventory();
     if (upc) {
-      items = items.filter(item => item.upc === upc);
+      items = items.filter((item) => item.upc === upc);
     }
     if (category) {
-      items = items.filter(item => item.category === category);
+      items = items.filter((item) => item.category === category);
     }
 
-    return items.map(item => ({
+    return items.map((item) => ({
       source: 'A',
       upc: item.upc,
       category: item.category,
@@ -127,7 +134,7 @@ export class InventoryProvider {
       transferCost: 0.2, // Mock cost
       transferTime: 1, // Mock time
     }));
-  };
+  }
 
   /**
    * Fetches inventory from Warehouse B's external API.
@@ -143,7 +150,7 @@ export class InventoryProvider {
       for (const sku of skus) {
         const inventoryResponse = await axios.get(`http://b.api/inventory/${sku}`);
         for (const bItem of inventoryResponse.data as WarehouseBItem[]) {
-          const category = (await this.getCategoryFromUPC(bItem.label));
+          const category = await this.getCategoryFromUPC(bItem.label);
           items.push({
             source: 'B',
             upc: upc,
@@ -158,10 +165,13 @@ export class InventoryProvider {
       }
       return items;
     } catch (error) {
-      console.warn(`Failed to fetch inventory from warehouse B for UPC ${upc}:`, error instanceof Error ? error.message : error);
+      console.warn(
+        `Failed to fetch inventory from warehouse B for UPC ${upc}:`,
+        error instanceof Error ? error.message : error
+      );
       return []; // Return empty array to allow other warehouses to work
     }
-  };
+  }
 
   /**
    * Fetches inventory from Warehouse C's external API.
@@ -173,24 +183,27 @@ export class InventoryProvider {
       const response = await axios.get(`http://c.api/api/items?upc=${upc}`);
       const cItems: WarehouseCItem[] = response.data;
 
-      return cItems.map(item => ({
+      return cItems.map((item) => ({
         source: 'C',
         upc: item.upc,
-        category: CategoryClassifier.getCategoryFromLabel(item.desc),
+        category: getCategoryFromLabel(item.desc),
         name: item.desc,
         quantity: item.qty,
         locationDetails: {
           position: item.position,
-          transfer_fee_mile: item.transfer_fee_mile
+          transfer_fee_mile: item.transfer_fee_mile,
         },
         transferCost: item.transfer_fee_mile,
         transferTime: 2.5,
       }));
     } catch (error) {
-      console.warn(`Failed to fetch inventory from warehouse C for UPC ${upc}:`, error instanceof Error ? error.message : error);
+      console.warn(
+        `Failed to fetch inventory from warehouse C for UPC ${upc}:`,
+        error instanceof Error ? error.message : error
+      );
       return []; // Return empty array to allow other warehouses to work
     }
-  };
+  }
 
   /**
    * Aggregates inventory from all warehouses into a single, normalized list.
@@ -202,7 +215,7 @@ export class InventoryProvider {
       this.getInventoryFromC(upc),
     ]);
     return [...aInventory, ...bInventory, ...cInventory];
-  };
+  }
 
   /**
    * Defines the available transfer rules.
@@ -228,7 +241,7 @@ export class InventoryProvider {
   ): Promise<string> {
     this.validateTransferRule(rule);
     const allInventory = await this.getAllInventory(UPC);
-    const sourceInventory = allInventory.filter(item => item.source === from);
+    const sourceInventory = allInventory.filter((item) => item.source === from);
     const availableQuantity = sourceInventory.reduce((sum, item) => sum + item.quantity, 0);
 
     if (availableQuantity < quantity) {
@@ -247,12 +260,7 @@ export class InventoryProvider {
 
     // Calculate transfer metrics using the unified strategy
     const selectedItem = sourceInventory[0];
-    const { metric: transferMetric, label: metricLabel } = this.calculateTransferMetric(
-      distance,
-      from,
-      rule,
-      selectedItem
-    );
+    const { label: metricLabel } = this.calculateTransferMetric(distance, from, rule, selectedItem);
 
     // Update inventory in the source warehouse
     if (from === 'A') {
@@ -261,7 +269,9 @@ export class InventoryProvider {
     } else {
       // For external warehouses, log the operation
       // In production, this would call the external API to update their inventory
-      console.log(`External API call would be made to update warehouse ${from} inventory for UPC ${UPC}, reducing by ${quantity} units`);
+      console.log(
+        `External API call would be made to update warehouse ${from} inventory for UPC ${UPC}, reducing by ${quantity} units`
+      );
     }
 
     console.log(`Transfer completed: ${quantity} units of UPC ${UPC} from warehouse ${from} to ${to}.`);
@@ -269,7 +279,7 @@ export class InventoryProvider {
     console.log(`Transfer rule: ${rule}, ${metricLabel}`);
 
     return `Transfer of ${quantity} units of UPC ${UPC} from ${from} to ${to} completed successfully. Distance: ${distance.toFixed(0)} miles, ${metricLabel}`;
-  };
+  }
 
   async performTransferWithNoFrom({ from, to, UPC, quantity, rule }: TransferRequest): Promise<string> {
     this.validateTransferRule(rule);
@@ -287,13 +297,16 @@ export class InventoryProvider {
       const availableSources: { [key: string]: number } = {};
 
       // Group inventory by source and check for sufficient quantity
-      const inventoryBySource: { [key: string]: NormalizedInventoryItem[] } = allInventory.reduce((acc, item) => {
-        if (!acc[item.source]) {
-          acc[item.source] = [];
-        }
-        acc[item.source].push(item);
-        return acc;
-      }, {} as { [key: string]: NormalizedInventoryItem[] });
+      const inventoryBySource: { [key: string]: NormalizedInventoryItem[] } = allInventory.reduce(
+        (acc, item) => {
+          if (!acc[item.source]) {
+            acc[item.source] = [];
+          }
+          acc[item.source].push(item);
+          return acc;
+        },
+        {} as { [key: string]: NormalizedInventoryItem[] }
+      );
 
       // Find the best source based on distance and rule
       for (const source in inventoryBySource) {
@@ -317,12 +330,7 @@ export class InventoryProvider {
 
           // Calculate score using the unified metric calculation
           const firstItem = items[0];
-          const { metric: score } = this.calculateTransferMetric(
-            distance,
-            source as 'A' | 'B' | 'C',
-            rule,
-            firstItem
-          );
+          const { metric: score } = this.calculateTransferMetric(distance, source as 'A' | 'B' | 'C', rule, firstItem);
 
           availableSources[source] = score;
 
@@ -339,7 +347,7 @@ export class InventoryProvider {
       }
     }
 
-    const sourceInventory = allInventory.filter(item => item.source === sourceWarehouse);
+    const sourceInventory = allInventory.filter((item) => item.source === sourceWarehouse);
     const availableQuantity = sourceInventory.reduce((sum, item) => sum + item.quantity, 0);
 
     if (availableQuantity < quantity) {
@@ -357,18 +365,15 @@ export class InventoryProvider {
 
     // Calculate final metrics using the unified strategy
     const selectedItem = sourceInventory[0];
-    const { metric: transferMetric, label: metricLabel } = this.calculateTransferMetric(
-      distance,
-      sourceWarehouse,
-      rule,
-      selectedItem
-    );
+    const { label: metricLabel } = this.calculateTransferMetric(distance, sourceWarehouse, rule, selectedItem);
 
     // Update inventory in the source warehouse
     if (sourceWarehouse === 'A') {
       await this.databaseConnector.updateInternalInventory(UPC, -quantity);
     } else {
-      console.log(`External API call would be made to update warehouse ${sourceWarehouse} inventory for UPC ${UPC}, reducing by ${quantity} units`);
+      console.log(
+        `External API call would be made to update warehouse ${sourceWarehouse} inventory for UPC ${UPC}, reducing by ${quantity} units`
+      );
     }
 
     console.log(`Transfer completed: ${quantity} units of UPC ${UPC} from warehouse ${sourceWarehouse} to ${to}.`);
@@ -376,8 +381,7 @@ export class InventoryProvider {
     console.log(`Transfer rule: ${rule}, ${metricLabel}`);
 
     return `Transfer of ${quantity} units of UPC ${UPC} from ${sourceWarehouse} to ${to} completed successfully. Distance: ${distance.toFixed(0)} miles, ${metricLabel}`;
-  };
-
+  }
 
   private validateTransferRule(rule: string): void {
     if (!this.transferRules[rule]) {

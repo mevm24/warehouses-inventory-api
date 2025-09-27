@@ -1,95 +1,86 @@
-import { ValidationError, NotFoundError } from '../errors/customErrors';
+import { MIN_UPC_LENGTH, UPC_PATTERN, VALID_CATEGORIES } from '../constants';
+import { NotFoundError, ValidationError } from '../errors/customErrors';
+import type { QueryValidationResult } from '../interfaces';
 
-export interface QueryValidationResult {
-  type: 'upc' | 'category';
-  value: string;
+/**
+ * Determines if a query string is a UPC or category and validates it
+ */
+export function validateAndClassifyQuery(query: string): QueryValidationResult {
+  if (!query || query.trim().length === 0) {
+    throw new ValidationError('Query cannot be empty.');
+  }
+
+  const trimmedQuery = query.trim();
+  const isNumeric = UPC_PATTERN.test(trimmedQuery);
+
+  if (isNumeric && trimmedQuery.length >= MIN_UPC_LENGTH) {
+    validateUPC(trimmedQuery);
+    return { type: 'upc', value: trimmedQuery };
+  } else {
+    const normalizedCategory = validateAndNormalizeCategory(trimmedQuery);
+    return { type: 'category', value: normalizedCategory };
+  }
 }
 
-export class QueryUtils {
-  private static readonly VALID_CATEGORIES = ['widgets', 'gadgets', 'accessories'];
-  private static readonly MIN_UPC_LENGTH = 8;
-  private static readonly UPC_PATTERN = /^\d+$/;
-
-  /**
-   * Determines if a query string is a UPC or category and validates it
-   */
-  static validateAndClassifyQuery(query: string): QueryValidationResult {
-    if (!query || query.trim().length === 0) {
-      throw new ValidationError('Query cannot be empty.');
-    }
-
-    const trimmedQuery = query.trim();
-    const isNumeric = this.UPC_PATTERN.test(trimmedQuery);
-
-    if (isNumeric && trimmedQuery.length >= this.MIN_UPC_LENGTH) {
-      this.validateUPC(trimmedQuery);
-      return { type: 'upc', value: trimmedQuery };
-    } else {
-      const normalizedCategory = this.validateAndNormalizeCategory(trimmedQuery);
-      return { type: 'category', value: normalizedCategory };
-    }
+/**
+ * Validates UPC format and length
+ */
+export function validateUPC(upc: string): void {
+  if (!UPC_PATTERN.test(upc)) {
+    throw new ValidationError('UPC must contain only numeric characters.');
   }
 
-  /**
-   * Validates UPC format and length
-   */
-  static validateUPC(upc: string): void {
-    if (!this.UPC_PATTERN.test(upc)) {
-      throw new ValidationError('UPC must contain only numeric characters.');
-    }
+  if (upc.length < MIN_UPC_LENGTH) {
+    throw new ValidationError('Invalid UPC code.');
+  }
+}
 
-    if (upc.length < this.MIN_UPC_LENGTH) {
-      throw new ValidationError('Invalid UPC code.');
-    }
+/**
+ * Validates and normalizes category name
+ */
+export function validateAndNormalizeCategory(category: string): string {
+  const normalizedCategory = category.toLowerCase().trim();
+
+  if (!VALID_CATEGORIES.includes(normalizedCategory)) {
+    throw new NotFoundError('Invalid category.');
   }
 
-  /**
-   * Validates and normalizes category name
-   */
-  static validateAndNormalizeCategory(category: string): string {
-    const normalizedCategory = category.toLowerCase().trim();
+  return normalizedCategory;
+}
 
-    if (!this.VALID_CATEGORIES.includes(normalizedCategory)) {
-      throw new NotFoundError('Invalid category.');
-    }
-
-    return normalizedCategory;
+/**
+ * Validates that a result array is not empty
+ */
+export function validateResultNotEmpty<T>(items: T[] | null | undefined, errorMessage: string): T[] {
+  if (!items || items.length === 0) {
+    throw new NotFoundError(errorMessage);
   }
+  return items;
+}
 
-  /**
-   * Validates that a result array is not empty
-   */
-  static validateResultNotEmpty<T>(items: T[] | null | undefined, errorMessage: string): T[] {
-    if (!items || items.length === 0) {
-      throw new NotFoundError(errorMessage);
-    }
-    return items;
+/**
+ * Creates standardized error messages for UPC not found
+ */
+export function createUPCNotFoundError(upc: string, warehouseId?: string): string {
+  if (warehouseId) {
+    return `No inventory found for UPC "${upc}" in warehouse ${warehouseId}.`;
   }
+  return `No inventory found for UPC "${upc}".`;
+}
 
-  /**
-   * Creates standardized error messages for UPC not found
-   */
-  static createUPCNotFoundError(upc: string, warehouseId?: string): string {
-    if (warehouseId) {
-      return `No inventory found for UPC "${upc}" in warehouse ${warehouseId}.`;
-    }
-    return `No inventory found for UPC "${upc}".`;
+/**
+ * Creates standardized error messages for category not found
+ */
+export function createCategoryNotFoundError(category: string, warehouseId?: string): string {
+  if (warehouseId) {
+    return `No items found in category "${category}" for warehouse ${warehouseId}.`;
   }
+  return `No items found in category "${category}".`;
+}
 
-  /**
-   * Creates standardized error messages for category not found
-   */
-  static createCategoryNotFoundError(category: string, warehouseId?: string): string {
-    if (warehouseId) {
-      return `No items found in category "${category}" for warehouse ${warehouseId}.`;
-    }
-    return `No items found in category "${category}".`;
-  }
-
-  /**
-   * Gets the list of valid categories
-   */
-  static getValidCategories(): readonly string[] {
-    return [...this.VALID_CATEGORIES];
-  }
+/**
+ * Gets the list of valid categories
+ */
+export function getValidCategories(): readonly string[] {
+  return [...VALID_CATEGORIES];
 }

@@ -1,5 +1,5 @@
-import request from 'supertest';
 import express from 'express';
+import request from 'supertest';
 import inventoryRoutes from '../../src/controllers/inventory';
 import { authMiddleware } from '../../src/middlewares/auth';
 import '../../src/data';
@@ -17,9 +17,7 @@ describe('Inventory Controller', () => {
   describe('GET /api/v1/inventory/:query', () => {
     describe('UPC queries', () => {
       it('should return inventory for valid UPC', async () => {
-        const response = await request(app)
-          .get('/api/v1/inventory/12345678')
-          .set('Authorization', 'Bearer test-token');
+        const response = await request(app).get('/api/v1/inventory/12345678').set('Authorization', 'Bearer test-token');
 
         expect(response.status).toBe(200);
         expect(response.body).toBeInstanceOf(Array);
@@ -28,18 +26,14 @@ describe('Inventory Controller', () => {
       });
 
       it('should return 404 for non-existent UPC', async () => {
-        const response = await request(app)
-          .get('/api/v1/inventory/99999999')
-          .set('Authorization', 'Bearer test-token');
+        const response = await request(app).get('/api/v1/inventory/99999999').set('Authorization', 'Bearer test-token');
 
         expect(response.status).toBe(404);
         expect(response.body).toHaveProperty('message', 'No inventory found for UPC "99999999".');
       });
 
       it('should return 404 for invalid category that looks like short UPC', async () => {
-        const response = await request(app)
-          .get('/api/v1/inventory/1234567')
-          .set('Authorization', 'Bearer test-token');
+        const response = await request(app).get('/api/v1/inventory/1234567').set('Authorization', 'Bearer test-token');
 
         // Since it's not 8+ digits, it's treated as a category name
         expect(response.status).toBe(404);
@@ -49,9 +43,7 @@ describe('Inventory Controller', () => {
 
     describe('Category queries', () => {
       it('should return inventory for valid category (widgets)', async () => {
-        const response = await request(app)
-          .get('/api/v1/inventory/widgets')
-          .set('Authorization', 'Bearer test-token');
+        const response = await request(app).get('/api/v1/inventory/widgets').set('Authorization', 'Bearer test-token');
 
         expect(response.status).toBe(200);
         expect(response.body).toBeInstanceOf(Array);
@@ -60,9 +52,7 @@ describe('Inventory Controller', () => {
       });
 
       it('should return inventory for valid category (gadgets)', async () => {
-        const response = await request(app)
-          .get('/api/v1/inventory/gadgets')
-          .set('Authorization', 'Bearer test-token');
+        const response = await request(app).get('/api/v1/inventory/gadgets').set('Authorization', 'Bearer test-token');
 
         expect(response.status).toBe(200);
         expect(response.body).toBeInstanceOf(Array);
@@ -80,8 +70,7 @@ describe('Inventory Controller', () => {
 
     describe('Authentication', () => {
       it('should return 401 without authorization header', async () => {
-        const response = await request(app)
-          .get('/api/v1/inventory/widgets');
+        const response = await request(app).get('/api/v1/inventory/widgets');
 
         expect(response.status).toBe(401);
         expect(response.body).toHaveProperty('error');
@@ -95,7 +84,7 @@ describe('Inventory Controller', () => {
       to: 'B',
       UPC: '12345678',
       quantity: 5,
-      rule: 'cheapest'
+      rule: 'cheapest',
     };
 
     it('should successfully transfer inventory with valid request', async () => {
@@ -116,7 +105,7 @@ describe('Inventory Controller', () => {
           .set('Authorization', 'Bearer test-token')
           .send({
             from: 'A',
-            to: 'B'
+            to: 'B',
           });
 
         expect(response.status).toBe(400);
@@ -129,7 +118,7 @@ describe('Inventory Controller', () => {
           .set('Authorization', 'Bearer test-token')
           .send({
             ...validTransferRequest,
-            from: 'D'
+            from: 'D',
           });
 
         expect(response.status).toBe(400);
@@ -143,7 +132,7 @@ describe('Inventory Controller', () => {
           .send({
             ...validTransferRequest,
             from: 'A',
-            to: 'A'
+            to: 'A',
           });
 
         expect(response.status).toBe(400);
@@ -156,7 +145,7 @@ describe('Inventory Controller', () => {
           .set('Authorization', 'Bearer test-token')
           .send({
             ...validTransferRequest,
-            quantity: -5
+            quantity: -5,
           });
 
         expect(response.status).toBe(400);
@@ -169,7 +158,7 @@ describe('Inventory Controller', () => {
           .set('Authorization', 'Bearer test-token')
           .send({
             ...validTransferRequest,
-            quantity: 0
+            quantity: 0,
           });
 
         expect(response.status).toBe(400);
@@ -182,7 +171,7 @@ describe('Inventory Controller', () => {
           .set('Authorization', 'Bearer test-token')
           .send({
             ...validTransferRequest,
-            rule: 'invalid-rule'
+            rule: 'invalid-rule',
           });
 
         expect(response.status).toBe(400);
@@ -197,7 +186,7 @@ describe('Inventory Controller', () => {
         .set('Authorization', 'Bearer test-token')
         .send({
           ...validTransferRequest,
-          quantity: 1000
+          quantity: 1000,
         });
 
       expect(response.status).toBe(400);
@@ -211,7 +200,7 @@ describe('Inventory Controller', () => {
         .set('Authorization', 'Bearer test-token')
         .send({
           ...validTransferRequest,
-          rule: 'fastest'
+          rule: 'fastest',
         });
 
       expect(response.status).toBe(200);

@@ -1,6 +1,5 @@
 import { Container } from '../../../src/container/container';
-import { IInventoryService, ITransferService } from '../../../src/interfaces/services';
-import { TransferRequest } from '../../../src/interfaces/general';
+import type { IInventoryService, ITransferService, TransferRequest } from '../../../src/interfaces';
 import '../../../src/data';
 
 describe('New Architecture Integration Tests', () => {
@@ -23,7 +22,7 @@ describe('New Architecture Integration Tests', () => {
       expect(allInventory.length).toBeGreaterThan(0);
 
       // Verify we have items from multiple warehouses
-      const sources = new Set(allInventory.map(item => item.source));
+      const sources = new Set(allInventory.map((item) => item.source));
       expect(sources.size).toBeGreaterThan(1);
 
       // Step 2: Perform a transfer using the new service
@@ -32,7 +31,7 @@ describe('New Architecture Integration Tests', () => {
         to: 'B',
         UPC: '12345678',
         quantity: 1,
-        rule: 'cheapest'
+        rule: 'cheapest',
       };
 
       const transferResult = await transferService.performTransfer(transferRequest);
@@ -47,7 +46,7 @@ describe('New Architecture Integration Tests', () => {
         to: 'A' as const,
         UPC: '12345678',
         quantity: 2,
-        rule: 'fastest' as const
+        rule: 'fastest' as const,
       };
 
       const result = await transferService.performOptimalTransfer(optimalRequest);
@@ -63,7 +62,7 @@ describe('New Architecture Integration Tests', () => {
 
       expect(widgetInventory).toBeInstanceOf(Array);
       expect(widgetInventory.length).toBeGreaterThan(0);
-      expect(widgetInventory.every(item => item.category === 'widgets')).toBe(true);
+      expect(widgetInventory.every((item) => item.category === 'widgets')).toBe(true);
     });
 
     it('should handle both transfer rules correctly', async () => {
@@ -72,7 +71,7 @@ describe('New Architecture Integration Tests', () => {
         to: 'C',
         UPC: '12345678',
         quantity: 1,
-        rule: 'cheapest'
+        rule: 'cheapest',
       };
 
       const fastestRequest: TransferRequest = {
@@ -80,7 +79,7 @@ describe('New Architecture Integration Tests', () => {
         to: 'C',
         UPC: '12345678',
         quantity: 1,
-        rule: 'fastest'
+        rule: 'fastest',
       };
 
       const cheapestResult = await transferService.performTransfer(cheapestRequest);
@@ -99,11 +98,12 @@ describe('New Architecture Integration Tests', () => {
         to: 'A', // Same source and destination
         UPC: '12345678',
         quantity: 1,
-        rule: 'cheapest'
+        rule: 'cheapest',
       };
 
-      await expect(transferService.performTransfer(invalidRequest))
-        .rejects.toThrow('Source and destination warehouses cannot be the same');
+      await expect(transferService.performTransfer(invalidRequest)).rejects.toThrow(
+        'Source and destination warehouses cannot be the same'
+      );
     });
 
     it('should handle insufficient inventory gracefully', async () => {
@@ -112,11 +112,10 @@ describe('New Architecture Integration Tests', () => {
         to: 'B',
         UPC: '12345678',
         quantity: 10000, // Way more than available
-        rule: 'cheapest'
+        rule: 'cheapest',
       };
 
-      await expect(transferService.performTransfer(excessiveRequest))
-        .rejects.toThrow('Insufficient stock');
+      await expect(transferService.performTransfer(excessiveRequest)).rejects.toThrow('Insufficient stock');
     });
 
     it('should handle non-existent UPC gracefully', async () => {
@@ -128,33 +127,35 @@ describe('New Architecture Integration Tests', () => {
 
   describe('Performance and scalability', () => {
     it('should handle multiple concurrent inventory queries', async () => {
-      const promises = Array(10).fill(null).map(() =>
-        inventoryService.getAllInventory('12345678')
-      );
+      const promises = Array(10)
+        .fill(null)
+        .map(() => inventoryService.getAllInventory('12345678'));
 
       const results = await Promise.all(promises);
 
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBeInstanceOf(Array);
         expect(result.length).toBeGreaterThan(0);
       });
     });
 
     it('should handle multiple concurrent transfers', async () => {
-      const transferPromises = Array(5).fill(null).map((_, index) => {
-        const request: TransferRequest = {
-          from: 'A',
-          to: 'B',
-          UPC: '12345678',
-          quantity: 1,
-          rule: index % 2 === 0 ? 'cheapest' : 'fastest'
-        };
-        return transferService.performTransfer(request);
-      });
+      const transferPromises = Array(5)
+        .fill(null)
+        .map((_, index) => {
+          const request: TransferRequest = {
+            from: 'A',
+            to: 'B',
+            UPC: '12345678',
+            quantity: 1,
+            rule: index % 2 === 0 ? 'cheapest' : 'fastest',
+          };
+          return transferService.performTransfer(request);
+        });
 
       const results = await Promise.all(transferPromises);
 
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toContain('completed successfully');
       });
     });
@@ -166,11 +167,11 @@ describe('New Architecture Integration Tests', () => {
       const inventory = await inventoryService.getAllInventory('12345678');
 
       // Should have items from all warehouses (A, B, C)
-      const sources = inventory.map(item => item.source);
+      const sources = inventory.map((item) => item.source);
       expect(sources).toContain('A');
 
       // Should have proper structure
-      inventory.forEach(item => {
+      inventory.forEach((item) => {
         expect(item).toHaveProperty('source');
         expect(item).toHaveProperty('upc');
         expect(item).toHaveProperty('category');
@@ -186,7 +187,7 @@ describe('New Architecture Integration Tests', () => {
         { from: 'A', to: 'B', rule: 'cheapest' },
         { from: 'A', to: 'C', rule: 'fastest' },
         { from: 'B', to: 'A', rule: 'cheapest' },
-        { from: 'C', to: 'A', rule: 'fastest' }
+        { from: 'C', to: 'A', rule: 'fastest' },
       ];
 
       for (const scenario of scenarios) {
@@ -195,7 +196,7 @@ describe('New Architecture Integration Tests', () => {
           to: scenario.to as any,
           UPC: '12345678',
           quantity: 1,
-          rule: scenario.rule as any
+          rule: scenario.rule as any,
         };
 
         const result = await transferService.performTransfer(request);

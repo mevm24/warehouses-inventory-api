@@ -18,7 +18,7 @@
       "name": "Partner Warehouse B",
       "location": {
         "lat": 40.7128,
-        "long": -74.0060
+        "long": -74.006
       },
       "api": {
         "type": "external-b-style",

@@ -1,9 +1,9 @@
-import { InventoryProviderV2 } from '../../src/services/inventoryV2';
-import { DBProvider } from '../../src/db/dbConnector';
-import { warehouseRegistry } from '../../src/config/registry';
-import { WarehouseConfig } from '../../src/interfaces/warehouse';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
+import { warehouseRegistry } from '../../src/config/registry';
+import { DBProvider } from '../../src/db/dbConnector';
+import type { WarehouseConfig } from '../../src/interfaces/warehouse';
+import { InventoryProviderV2 } from '../../src/services/inventoryV2';
 
 describe('InventoryProviderV2 Extended Tests for Coverage', () => {
   let inventoryProvider: InventoryProviderV2;
@@ -17,40 +17,48 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
 
     // Setup comprehensive mock responses
     mockAxios.onPost('http://b.api/lookup/12345678').reply(200, ['SKU1234']);
-    mockAxios.onGet('http://b.api/inventory/SKU1234').reply(200, [{
-      sku: 'SKU1234',
-      label: 'Super Widget',
-      stock: 52,
-      coords: [40.7128, -74.0060],
-      mileageCostPerMile: 0.7
-    }]);
+    mockAxios.onGet('http://b.api/inventory/SKU1234').reply(200, [
+      {
+        sku: 'SKU1234',
+        label: 'Super Widget',
+        stock: 52,
+        coords: [40.7128, -74.006],
+        mileageCostPerMile: 0.7,
+      },
+    ]);
 
-    mockAxios.onGet('http://c.api/api/items?upc=12345678').reply(200, [{
-      upc: '12345678',
-      desc: 'Widget - Super',
-      qty: 25,
-      position: { lat: 41.2, long: -73.7 },
-      transfer_fee_mile: 0.65
-    }]);
+    mockAxios.onGet('http://c.api/api/items?upc=12345678').reply(200, [
+      {
+        upc: '12345678',
+        desc: 'Widget - Super',
+        qty: 25,
+        position: { lat: 41.2, long: -73.7 },
+        transfer_fee_mile: 0.65,
+      },
+    ]);
 
     // Mock warehouse D responses
     mockAxios.onPost('http://d.api/lookup/12345678').reply(200, ['SKU9999']);
-    mockAxios.onGet('http://d.api/inventory/SKU9999').reply(200, [{
-      sku: 'SKU9999',
-      label: 'Premium Widget',
-      stock: 75,
-      coords: [47.6062, -122.3321],
-      mileageCostPerMile: 0.5
-    }]);
+    mockAxios.onGet('http://d.api/inventory/SKU9999').reply(200, [
+      {
+        sku: 'SKU9999',
+        label: 'Premium Widget',
+        stock: 75,
+        coords: [47.6062, -122.3321],
+        mileageCostPerMile: 0.5,
+      },
+    ]);
 
     // Mock warehouse E responses
-    mockAxios.onGet('http://e.api/api/products?upc=12345678').reply(200, [{
-      upc: '12345678',
-      desc: 'Widget - Advanced',
-      qty: 60,
-      position: { lat: 41.8781, long: -87.6298 },
-      transfer_fee_mile: 0.55
-    }]);
+    mockAxios.onGet('http://e.api/api/products?upc=12345678').reply(200, [
+      {
+        upc: '12345678',
+        desc: 'Widget - Advanced',
+        qty: 60,
+        position: { lat: 41.8781, long: -87.6298 },
+        transfer_fee_mile: 0.55,
+      },
+    ]);
   });
 
   afterEach(() => {
@@ -59,7 +67,7 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
 
   describe('Enhanced Transfer Operations', () => {
     it('should handle transfers between all warehouse combinations with cheapest rule', async () => {
-      const warehouses = ['A', 'B', 'C', 'D', 'E'];
+      const _warehouses = ['A', 'B', 'C', 'D', 'E'];
       const testCombinations = [
         { from: 'A', to: 'D' },
         { from: 'A', to: 'E' },
@@ -70,18 +78,12 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
         { from: 'D', to: 'A' },
         { from: 'D', to: 'B' },
         { from: 'E', to: 'A' },
-        { from: 'E', to: 'B' }
+        { from: 'E', to: 'B' },
       ];
 
       for (const combo of testCombinations) {
         try {
-          const result = await inventoryProvider.performTransfer(
-            combo.from,
-            combo.to,
-            '12345678',
-            2,
-            'cheapest'
-          );
+          const result = await inventoryProvider.performTransfer(combo.from, combo.to, '12345678', 2, 'cheapest');
 
           expect(result).toContain('completed successfully');
           expect(result).toContain('Distance');
@@ -99,18 +101,12 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
         { from: 'B', to: 'E' },
         { from: 'C', to: 'D' },
         { from: 'D', to: 'C' },
-        { from: 'E', to: 'A' }
+        { from: 'E', to: 'A' },
       ];
 
       for (const combo of testCombinations) {
         try {
-          const result = await inventoryProvider.performTransfer(
-            combo.from,
-            combo.to,
-            '12345678',
-            1,
-            'fastest'
-          );
+          const result = await inventoryProvider.performTransfer(combo.from, combo.to, '12345678', 1, 'fastest');
 
           expect(result).toContain('completed successfully');
           expect(result).toContain('Distance');
@@ -124,13 +120,7 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
 
     it('should auto-select optimal warehouse for long-distance transfers', async () => {
       // Test auto-selection to West Coast (D - Seattle)
-      const result = await inventoryProvider.performTransfer(
-        null,
-        'D',
-        '12345678',
-        5,
-        'cheapest'
-      );
+      const result = await inventoryProvider.performTransfer(null, 'D', '12345678', 5, 'cheapest');
 
       expect(result).toContain('completed successfully');
       expect(result).toContain('to D');
@@ -139,13 +129,7 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
 
     it('should auto-select optimal warehouse for Midwest transfers', async () => {
       // Test auto-selection to Midwest (E - Chicago)
-      const result = await inventoryProvider.performTransfer(
-        null,
-        'E',
-        '12345678',
-        3,
-        'fastest'
-      );
+      const result = await inventoryProvider.performTransfer(null, 'E', '12345678', 3, 'fastest');
 
       expect(result).toContain('completed successfully');
       expect(result).toContain('to E');
@@ -205,12 +189,12 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
       const newWarehouse: WarehouseConfig = {
         id: 'F',
         name: 'Test Warehouse F',
-        location: { lat: 32.7767, long: -96.7970 }, // Dallas
+        location: { lat: 32.7767, long: -96.797 }, // Dallas
         api: {
           type: 'internal',
           defaultTransferCost: 0.3,
-          defaultTransferTime: 1.5
-        }
+          defaultTransferTime: 1.5,
+        },
       };
 
       await inventoryProvider.addWarehouse(newWarehouse);
@@ -237,14 +221,14 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
           id: 'G',
           name: 'Warehouse G',
           location: { lat: 30.2672, long: -97.7431 }, // Austin
-          api: { type: 'internal' as const, defaultTransferCost: 0.25, defaultTransferTime: 1.2 }
+          api: { type: 'internal' as const, defaultTransferCost: 0.25, defaultTransferTime: 1.2 },
         },
         {
           id: 'H',
           name: 'Warehouse H',
           location: { lat: 39.7392, long: -104.9903 }, // Denver
-          api: { type: 'internal' as const, defaultTransferCost: 0.35, defaultTransferTime: 1.8 }
-        }
+          api: { type: 'internal' as const, defaultTransferCost: 0.35, defaultTransferTime: 1.8 },
+        },
       ];
 
       for (const warehouse of warehouses) {
@@ -314,13 +298,15 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
       mockAxios.reset();
       // Keep B and C working, fail D and E
       mockAxios.onPost('http://b.api/lookup/12345678').reply(200, ['SKU1234']);
-      mockAxios.onGet('http://b.api/inventory/SKU1234').reply(200, [{
-        sku: 'SKU1234',
-        label: 'Super Widget',
-        stock: 52,
-        coords: [40.7128, -74.0060],
-        mileageCostPerMile: 0.7
-      }]);
+      mockAxios.onGet('http://b.api/inventory/SKU1234').reply(200, [
+        {
+          sku: 'SKU1234',
+          label: 'Super Widget',
+          stock: 52,
+          coords: [40.7128, -74.006],
+          mileageCostPerMile: 0.7,
+        },
+      ]);
 
       mockAxios.onPost('http://d.api/lookup/12345678').reply(500);
       mockAxios.onGet('http://e.api/api/products?upc=12345678').reply(500);
@@ -341,30 +327,28 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
       mockAxios.reset();
       // Only mock successful responses for A, B, C
       mockAxios.onPost('http://b.api/lookup/12345678').reply(200, ['SKU1234']);
-      mockAxios.onGet('http://b.api/inventory/SKU1234').reply(200, [{
-        sku: 'SKU1234',
-        label: 'Super Widget',
-        stock: 52,
-        coords: [40.7128, -74.0060],
-        mileageCostPerMile: 0.7
-      }]);
+      mockAxios.onGet('http://b.api/inventory/SKU1234').reply(200, [
+        {
+          sku: 'SKU1234',
+          label: 'Super Widget',
+          stock: 52,
+          coords: [40.7128, -74.006],
+          mileageCostPerMile: 0.7,
+        },
+      ]);
 
-      mockAxios.onGet('http://c.api/api/items?upc=12345678').reply(200, [{
-        upc: '12345678',
-        desc: 'Widget - Super',
-        qty: 25,
-        position: { lat: 41.2, long: -73.7 },
-        transfer_fee_mile: 0.65
-      }]);
+      mockAxios.onGet('http://c.api/api/items?upc=12345678').reply(200, [
+        {
+          upc: '12345678',
+          desc: 'Widget - Super',
+          qty: 25,
+          position: { lat: 41.2, long: -73.7 },
+          transfer_fee_mile: 0.65,
+        },
+      ]);
 
       // D and E will fail, but transfer should still work
-      const result = await inventoryProvider.performTransfer(
-        'B',
-        'C',
-        '12345678',
-        10,
-        'fastest'
-      );
+      const result = await inventoryProvider.performTransfer('B', 'C', '12345678', 10, 'fastest');
 
       expect(result).toContain('completed successfully');
     });
@@ -373,24 +357,12 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
   describe('Distance and Route Optimization', () => {
     it('should correctly identify optimal warehouse for different destinations', async () => {
       // For East Coast destination (B), should select based on fastest rule
-      const result1 = await inventoryProvider.performTransfer(
-        null,
-        'B',
-        '12345678',
-        5,
-        'fastest'
-      );
+      const result1 = await inventoryProvider.performTransfer(null, 'B', '12345678', 5, 'fastest');
       expect(result1).toContain('to B');
       expect(result1).toContain('completed successfully');
 
       // For West Coast destination (D), should select optimal source
-      const result2 = await inventoryProvider.performTransfer(
-        null,
-        'D',
-        '12345678',
-        5,
-        'fastest'
-      );
+      const result2 = await inventoryProvider.performTransfer(null, 'D', '12345678', 5, 'fastest');
       expect(result2).toContain('to D');
       expect(result2).toContain('completed successfully');
     });
@@ -398,16 +370,20 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
     it('should calculate accurate distances for cross-country transfers', () => {
       // LA to Seattle (A to D)
       const distanceAD = (inventoryProvider as any).haversineDistance(
-        34.0522, -118.2437,  // LA
-        47.6062, -122.3321   // Seattle
+        34.0522,
+        -118.2437, // LA
+        47.6062,
+        -122.3321 // Seattle
       );
       expect(distanceAD).toBeGreaterThan(950);
       expect(distanceAD).toBeLessThan(1000);
 
       // NYC to Chicago (B to E)
       const distanceBE = (inventoryProvider as any).haversineDistance(
-        40.7128, -74.0060,   // NYC
-        41.8781, -87.6298    // Chicago
+        40.7128,
+        -74.006, // NYC
+        41.8781,
+        -87.6298 // Chicago
       );
       expect(distanceBE).toBeGreaterThan(700);
       expect(distanceBE).toBeLessThan(800);
@@ -419,18 +395,12 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
       const results: string[] = [];
 
       for (let i = 0; i < 3; i++) {
-        const result = await inventoryProvider.performTransfer(
-          null,
-          'E',
-          '12345678',
-          5,
-          'cheapest'
-        );
+        const result = await inventoryProvider.performTransfer(null, 'E', '12345678', 5, 'cheapest');
         results.push(result);
       }
 
       // All should select the same source warehouse
-      const sources = results.map(r => r.match(/from (\w) to E/)?.[1]);
+      const sources = results.map((r) => r.match(/from (\w) to E/)?.[1]);
       const uniqueSources = [...new Set(sources)];
       expect(uniqueSources).toHaveLength(1);
     });
@@ -439,18 +409,12 @@ describe('InventoryProviderV2 Extended Tests for Coverage', () => {
       const results: string[] = [];
 
       for (let i = 0; i < 3; i++) {
-        const result = await inventoryProvider.performTransfer(
-          null,
-          'D',
-          '12345678',
-          5,
-          'fastest'
-        );
+        const result = await inventoryProvider.performTransfer(null, 'D', '12345678', 5, 'fastest');
         results.push(result);
       }
 
       // All should select the same source warehouse
-      const sources = results.map(r => r.match(/from (\w) to D/)?.[1]);
+      const sources = results.map((r) => r.match(/from (\w) to D/)?.[1]);
       const uniqueSources = [...new Set(sources)];
       expect(uniqueSources).toHaveLength(1);
     });

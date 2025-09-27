@@ -1,9 +1,8 @@
 import axios from 'axios';
-import { IWarehouseService } from '../interfaces/services';
-import { NormalizedInventoryItem, WarehouseBItem, WarehouseCItem } from '../interfaces/general';
 import { WAREHOUSE_LOCATIONS } from '../constants';
-import { DBConnector } from '../interfaces/db';
-import { CategoryClassifier } from '../utils/category';
+import type { IWarehouseService, NormalizedInventoryItem, WarehouseBItem, WarehouseCItem } from '../interfaces';
+import type { DBConnector } from '../interfaces/db';
+import { getCategoryFromLabel } from '../utils/category';
 
 export class WarehouseAService implements IWarehouseService {
   constructor(private databaseConnector: DBConnector) {}
@@ -12,13 +11,13 @@ export class WarehouseAService implements IWarehouseService {
     let items = await this.databaseConnector.fetchInternalInventory();
 
     if (upc) {
-      items = items.filter(item => item.upc === upc);
+      items = items.filter((item) => item.upc === upc);
     }
     if (category) {
-      items = items.filter(item => item.category === category);
+      items = items.filter((item) => item.category === category);
     }
 
-    return items.map(item => ({
+    return items.map((item) => ({
       source: 'A',
       upc: item.upc,
       category: item.category,
@@ -47,7 +46,7 @@ export class WarehouseBService implements IWarehouseService {
       for (const sku of skus) {
         const inventoryResponse = await axios.get(`http://b.api/inventory/${sku}`);
         for (const bItem of inventoryResponse.data as WarehouseBItem[]) {
-          const category = CategoryClassifier.getCategoryFromLabel(bItem.label);
+          const category = getCategoryFromLabel(bItem.label);
           items.push({
             source: 'B',
             upc: upc,
@@ -57,7 +56,7 @@ export class WarehouseBService implements IWarehouseService {
             locationDetails: {
               sku: bItem.sku,
               coords: bItem.coords,
-              mileageCostPerMile: bItem.mileageCostPerMile
+              mileageCostPerMile: bItem.mileageCostPerMile,
             },
             transferCost: bItem.mileageCostPerMile,
             transferTime: 1.5,
@@ -66,14 +65,18 @@ export class WarehouseBService implements IWarehouseService {
       }
       return items;
     } catch (error) {
-      console.warn(`Failed to fetch inventory from warehouse B for UPC ${upc}:`,
-        error instanceof Error ? error.message : error);
+      console.warn(
+        `Failed to fetch inventory from warehouse B for UPC ${upc}:`,
+        error instanceof Error ? error.message : error
+      );
       return [];
     }
   }
 
   async updateInventory(upc: string, quantityChange: number): Promise<void> {
-    console.log(`External API call would be made to update warehouse B inventory for UPC ${upc}, reducing by ${quantityChange} units`);
+    console.log(
+      `External API call would be made to update warehouse B inventory for UPC ${upc}, reducing by ${quantityChange} units`
+    );
   }
 }
 
@@ -85,28 +88,32 @@ export class WarehouseCService implements IWarehouseService {
       const response = await axios.get(`http://c.api/api/items?upc=${upc}`);
       const cItems: WarehouseCItem[] = response.data;
 
-      return cItems.map(item => ({
+      return cItems.map((item) => ({
         source: 'C',
         upc: item.upc,
-        category: CategoryClassifier.getCategoryFromLabel(item.desc),
+        category: getCategoryFromLabel(item.desc),
         name: item.desc,
         quantity: item.qty,
         locationDetails: {
           position: item.position,
-          transfer_fee_mile: item.transfer_fee_mile
+          transfer_fee_mile: item.transfer_fee_mile,
         },
         transferCost: item.transfer_fee_mile,
         transferTime: 2.5,
       }));
     } catch (error) {
-      console.warn(`Failed to fetch inventory from warehouse C for UPC ${upc}:`,
-        error instanceof Error ? error.message : error);
+      console.warn(
+        `Failed to fetch inventory from warehouse C for UPC ${upc}:`,
+        error instanceof Error ? error.message : error
+      );
       return [];
     }
   }
 
   async updateInventory(upc: string, quantityChange: number): Promise<void> {
-    console.log(`External API call would be made to update warehouse C inventory for UPC ${upc}, reducing by ${quantityChange} units`);
+    console.log(
+      `External API call would be made to update warehouse C inventory for UPC ${upc}, reducing by ${quantityChange} units`
+    );
   }
 }
 

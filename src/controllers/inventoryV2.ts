@@ -1,13 +1,20 @@
 // --- Refactored Express Router for N Warehouses ---
-import { Router, Request, Response } from 'express';
+import { type Request, type Response, Router } from 'express';
 import { Container } from '../container/container';
-import { ITransferServiceV2 } from '../services/transferServiceV2';
-import { IWarehouseRegistryService } from '../services/warehouseRegistryService';
-import { IValidationServiceV2 } from '../services/validationServiceV2';
-import { IInventoryServiceV2 } from '../services/inventoryServiceV2';
-import { ErrorHandler } from '../errors/customErrors';
-import { QueryUtils } from '../utils/queryUtils';
-import { NotFoundError } from '../errors/customErrors';
+import { handleError, handleTransferError, NotFoundError } from '../errors/customErrors';
+import type {
+  IInventoryServiceV2,
+  ITransferServiceV2,
+  IValidationServiceV2,
+  IWarehouseRegistryService,
+  NormalizedInventoryItemV2,
+} from '../interfaces';
+import {
+  createCategoryNotFoundError,
+  createUPCNotFoundError,
+  validateAndClassifyQuery,
+  validateResultNotEmpty,
+} from '../utils/queryUtils';
 
 const router = Router();
 const container = Container.getInstance();
@@ -19,15 +26,17 @@ const inventoryServiceV2: IInventoryServiceV2 = container.getInventoryServiceV2(
 /**
  * @api {get} /warehouses Get list of all registered warehouses
  */
-router.get('/warehouses', async (req: Request, res: Response) => {
+router.get('/warehouses', async (_req: Request, res: Response) => {
   try {
     const warehouses = warehouseRegistryService.getAllWarehouses();
-    res.json(warehouses.map(w => ({
-      id: w.id,
-      name: w.name,
-      location: w.location,
-      type: w.api.type
-    })));
+    res.json(
+      warehouses.map((w) => ({
+        id: w.id,
+        name: w.name,
+        location: w.location,
+        type: w.api.type,
+      }))
+    );
   } catch (error) {
     console.error('Error fetching warehouses:', error);
     res.status(500).json({ message: 'Failed to retrieve warehouses.' });
@@ -46,24 +55,23 @@ router.get('/:warehouseId/:query', async (req: Request, res: Response) => {
       throw new NotFoundError(`Warehouse "${warehouseId}" not found.`);
     }
 
-    const { type, value } = QueryUtils.validateAndClassifyQuery(query);
+    const { type, value } = validateAndClassifyQuery(query);
 
-    let items;
+    let items: NormalizedInventoryItemV2[];
     if (type === 'upc') {
       items = await inventoryServiceV2.getInventoryFromWarehouse(warehouseId, value);
-      QueryUtils.validateResultNotEmpty(items, QueryUtils.createUPCNotFoundError(value, warehouseId));
+      validateResultNotEmpty(items, createUPCNotFoundError(value, warehouseId));
     } else {
       items = await inventoryServiceV2.getInventoryFromWarehouse(warehouseId, undefined, value);
-      QueryUtils.validateResultNotEmpty(items, QueryUtils.createCategoryNotFoundError(value, warehouseId));
+      validateResultNotEmpty(items, createCategoryNotFoundError(value, warehouseId));
     }
 
     res.json(items);
   } catch (error) {
     console.error('Error fetching warehouse inventory:', error);
-    return ErrorHandler.handleError(error, res, 'Failed to retrieve inventory.');
+    return handleError(error, res, 'Failed to retrieve inventory.');
   }
 });
-
 
 /**
  * @api {get} /:query Get inventory across all warehouses
@@ -72,24 +80,23 @@ router.get('/:query', async (req: Request, res: Response) => {
   const query = req.params.query;
 
   try {
-    const { type, value } = QueryUtils.validateAndClassifyQuery(query);
+    const { type, value } = validateAndClassifyQuery(query);
 
-    let allItems;
+    let allItems: NormalizedInventoryItemV2[];
     if (type === 'upc') {
       allItems = await inventoryServiceV2.getAllInventory(value);
-      QueryUtils.validateResultNotEmpty(allItems, QueryUtils.createUPCNotFoundError(value));
+      validateResultNotEmpty(allItems, createUPCNotFoundError(value));
     } else {
       allItems = await inventoryServiceV2.getAllInventory(undefined, value);
-      QueryUtils.validateResultNotEmpty(allItems, QueryUtils.createCategoryNotFoundError(value));
+      validateResultNotEmpty(allItems, createCategoryNotFoundError(value));
     }
 
     res.json(allItems);
   } catch (error) {
     console.error('Error fetching inventory:', error);
-    return ErrorHandler.handleError(error, res, 'Failed to retrieve inventory.');
+    return handleError(error, res, 'Failed to retrieve inventory.');
   }
 });
-
 
 /**
  * @api {post} /transfer Transfer inventory between warehouses
@@ -110,10 +117,9 @@ router.post('/transfer', async (req: Request, res: Response) => {
     res.json({ message });
   } catch (error) {
     console.error('Error during inventory transfer:', error);
-    return ErrorHandler.handleTransferError(error, res);
+    return handleTransferError(error, res);
   }
 });
-
 
 /**
  * @api {post} /warehouse/register Register a new warehouse
@@ -129,15 +135,14 @@ router.post('/warehouse/register', async (req: Request, res: Response) => {
         id: warehouseConfig.id,
         name: warehouseConfig.name,
         location: warehouseConfig.location,
-        type: warehouseConfig.api.type
-      }
+        type: warehouseConfig.api.type,
+      },
     });
   } catch (error) {
     console.error('Error registering warehouse:', error);
-    return ErrorHandler.handleError(error, res, 'Failed to register warehouse.');
+    return handleError(error, res, 'Failed to register warehouse.');
   }
 });
-
 
 /**
  * @api {delete} /warehouse/:id Unregister an existing warehouse

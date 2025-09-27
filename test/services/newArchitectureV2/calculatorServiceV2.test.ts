@@ -1,7 +1,8 @@
-import { UnifiedCostCalculatorService, UnifiedTimeCalculatorService } from '../../../src/services/unifiedCalculatorService';
-import { IWarehouseRegistryService } from '../../../src/services/warehouseRegistryService';
-import { WarehouseConfig } from '../../../src/interfaces/warehouse';
-import { NormalizedInventoryItemV2 } from '../../../src/interfaces/general';
+import type { IWarehouseRegistryService, NormalizedInventoryItemV2, WarehouseConfig } from '../../../src/interfaces';
+import {
+  UnifiedCostCalculatorService,
+  UnifiedTimeCalculatorService,
+} from '../../../src/services/unifiedCalculatorService';
 
 describe('CalculatorServiceV2', () => {
   const mockWarehouseRegistry: jest.Mocked<IWarehouseRegistryService> = {
@@ -15,12 +16,12 @@ describe('CalculatorServiceV2', () => {
   const internalWarehouse: WarehouseConfig = {
     id: 'A',
     name: 'Internal Warehouse',
-    location: { lat: 40.7128, long: -74.0060 },
+    location: { lat: 40.7128, long: -74.006 },
     api: {
       type: 'internal',
       defaultTransferCost: 0.25,
-      defaultTransferTime: 1.5
-    }
+      defaultTransferTime: 1.5,
+    },
   };
 
   const externalBWarehouse: WarehouseConfig = {
@@ -31,8 +32,8 @@ describe('CalculatorServiceV2', () => {
       type: 'external-b-style',
       baseUrl: 'http://b.api',
       defaultTransferCost: 0.8,
-      defaultTransferTime: 2.0
-    }
+      defaultTransferTime: 2.0,
+    },
   };
 
   const externalCWarehouse: WarehouseConfig = {
@@ -43,15 +44,15 @@ describe('CalculatorServiceV2', () => {
       type: 'external-c-style',
       baseUrl: 'http://c.api',
       defaultTransferCost: 0.75,
-      defaultTransferTime: 3.0
-    }
+      defaultTransferTime: 3.0,
+    },
   };
 
   const unknownWarehouse: WarehouseConfig = {
     id: 'UNKNOWN',
     name: 'Unknown Warehouse',
     location: { lat: 0, long: 0 },
-    api: { type: 'unknown' as any }
+    api: { type: 'unknown' as any },
   };
 
   beforeEach(() => {
@@ -74,7 +75,7 @@ describe('CalculatorServiceV2', () => {
         quantity: 10,
         locationDetails: {},
         transferCost: 1.5,
-        transferTime: 2
+        transferTime: 2,
       };
 
       mockWarehouseRegistry.getWarehouse.mockReturnValue(internalWarehouse);
@@ -93,7 +94,7 @@ describe('CalculatorServiceV2', () => {
     it('should calculate cost using warehouse type fallback for internal', () => {
       const warehouseWithoutDefault = {
         ...internalWarehouse,
-        api: { type: 'internal' as const }
+        api: { type: 'internal' as const },
       };
       mockWarehouseRegistry.getWarehouse.mockReturnValue(warehouseWithoutDefault);
 
@@ -104,7 +105,7 @@ describe('CalculatorServiceV2', () => {
     it('should calculate cost using warehouse type fallback for external-b-style', () => {
       const warehouseWithoutDefault = {
         ...externalBWarehouse,
-        api: { type: 'external-b-style' as const, baseUrl: 'http://b.api' }
+        api: { type: 'external-b-style' as const, baseUrl: 'http://b.api' },
       };
       mockWarehouseRegistry.getWarehouse.mockReturnValue(warehouseWithoutDefault);
 
@@ -115,7 +116,7 @@ describe('CalculatorServiceV2', () => {
     it('should calculate cost using warehouse type fallback for external-c-style', () => {
       const warehouseWithoutDefault = {
         ...externalCWarehouse,
-        api: { type: 'external-c-style' as const, baseUrl: 'http://c.api' }
+        api: { type: 'external-c-style' as const, baseUrl: 'http://c.api' },
       };
       mockWarehouseRegistry.getWarehouse.mockReturnValue(warehouseWithoutDefault);
 
@@ -169,7 +170,7 @@ describe('CalculatorServiceV2', () => {
     it('should calculate time using type fallback for internal warehouse', () => {
       const warehouseWithoutDefault = {
         ...internalWarehouse,
-        api: { type: 'internal' as const }
+        api: { type: 'internal' as const },
       };
       mockWarehouseRegistry.getWarehouse.mockReturnValue(warehouseWithoutDefault);
 
@@ -180,7 +181,7 @@ describe('CalculatorServiceV2', () => {
     it('should calculate time using type fallback for external-b-style warehouse', () => {
       const warehouseWithoutDefault = {
         ...externalBWarehouse,
-        api: { type: 'external-b-style' as const, baseUrl: 'http://b.api' }
+        api: { type: 'external-b-style' as const, baseUrl: 'http://b.api' },
       };
       mockWarehouseRegistry.getWarehouse.mockReturnValue(warehouseWithoutDefault);
 
@@ -191,7 +192,7 @@ describe('CalculatorServiceV2', () => {
     it('should calculate time using type fallback for external-c-style warehouse', () => {
       const warehouseWithoutDefault = {
         ...externalCWarehouse,
-        api: { type: 'external-c-style' as const, baseUrl: 'http://c.api' }
+        api: { type: 'external-c-style' as const, baseUrl: 'http://c.api' },
       };
       mockWarehouseRegistry.getWarehouse.mockReturnValue(warehouseWithoutDefault);
 

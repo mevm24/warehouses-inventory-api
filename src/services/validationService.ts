@@ -1,15 +1,11 @@
-import { TransferRequest } from '../interfaces/general';
 import { ValidationError } from '../errors/customErrors';
-
-export interface IValidationService {
-  validateTransferRequest(body: any): TransferRequest;
-}
+import type { IValidationService, TransferRequest, TransferRequestBody } from '../interfaces';
 
 export class ValidationService implements IValidationService {
   private readonly validWarehouses = ['A', 'B', 'C'];
   private readonly validRules = ['fastest', 'cheapest'];
 
-  validateTransferRequest(body: any): TransferRequest {
+  validateTransferRequest(body: TransferRequestBody): TransferRequest {
     const { from, to, UPC, quantity, rule } = body;
 
     if (!from || !to || !UPC || quantity === undefined || !rule) {
@@ -32,6 +28,12 @@ export class ValidationService implements IValidationService {
       throw new ValidationError(`Invalid transfer rule. Must be one of: ${this.validRules.join(', ')}.`);
     }
 
-    return { from, to, UPC, quantity, rule };
+    return {
+      from: from as 'A' | 'B' | 'C' | undefined,
+      to: to as 'A' | 'B' | 'C' | undefined,
+      UPC,
+      quantity,
+      rule: rule as 'fastest' | 'cheapest',
+    };
   }
 }

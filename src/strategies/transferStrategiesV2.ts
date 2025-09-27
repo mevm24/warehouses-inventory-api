@@ -1,5 +1,9 @@
-import { ITransferStrategyV2, ICostCalculatorV2, ITimeCalculatorV2 } from '../interfaces/servicesV2';
-import { NormalizedInventoryItemV2 } from '../interfaces/general';
+import type {
+  ICostCalculatorV2,
+  ITimeCalculatorV2,
+  ITransferStrategyV2,
+  NormalizedInventoryItemV2,
+} from '../interfaces';
 
 export class FastestTransferStrategyV2 implements ITransferStrategyV2 {
   constructor(private timeCalculator: ITimeCalculatorV2) {}
@@ -8,7 +12,7 @@ export class FastestTransferStrategyV2 implements ITransferStrategyV2 {
     const metric = this.timeCalculator.calculateTime(item.source, distance);
     return {
       metric,
-      label: `Time: ${metric.toFixed(2)} hours`
+      label: `Time: ${metric.toFixed(2)} hours`,
     };
   }
 }
@@ -20,7 +24,7 @@ export class CheapestTransferStrategyV2 implements ITransferStrategyV2 {
     const metric = this.costCalculator.calculateCost(item.source, distance, item);
     return {
       metric,
-      label: `Cost: $${metric.toFixed(2)}`
+      label: `Cost: $${metric.toFixed(2)}`,
     };
   }
 }
@@ -30,7 +34,7 @@ export class TransferStrategyFactoryV2 {
 
   constructor(
     private costCalculator: ICostCalculatorV2,
-    private timeCalculator: ITimeCalculatorV2
+    timeCalculator: ITimeCalculatorV2
   ) {
     this.strategies.set('cheapest', new CheapestTransferStrategyV2(costCalculator));
     this.strategies.set('fastest', new FastestTransferStrategyV2(timeCalculator));

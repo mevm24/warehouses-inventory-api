@@ -1,6 +1,15 @@
+import { createWarehouseRegistry } from '../../src/config/warehouseLoader';
 import { WarehouseRegistry } from '../../src/config/warehouseRegistry';
-import { WarehouseConfigLoader } from '../../src/config/warehouseLoader';
-import { WarehouseConfig } from '../../src/interfaces/warehouse';
+import type { WarehouseApiConfig, WarehouseConfig } from '../../src/interfaces/warehouse';
+
+// Type guards for external API configurations
+function isExternalBStyleApi(api: WarehouseApiConfig): api is WarehouseApiConfig & { baseUrl: string; endpoints: { lookup: string; inventory: string } } {
+  return api.type === 'external-b-style' && 'baseUrl' in api && 'endpoints' in api;
+}
+
+function isExternalCStyleApi(api: WarehouseApiConfig): api is WarehouseApiConfig & { baseUrl: string; endpoints: { categories: string; items: string } } {
+  return api.type === 'external-c-style' && 'baseUrl' in api && 'endpoints' in api;
+}
 
 describe('WarehouseRegistry', () => {
   const mockWarehouses: WarehouseConfig[] = [
@@ -8,19 +17,19 @@ describe('WarehouseRegistry', () => {
       id: 'A',
       name: 'Internal Warehouse',
       location: { lat: 34.0522, long: -118.2437 },
-      api: { type: 'internal', defaultTransferCost: 0.2, defaultTransferTime: 1 }
+      api: { type: 'internal', defaultTransferCost: 0.2, defaultTransferTime: 1 },
     },
     {
       id: 'B',
       name: 'Partner Warehouse B',
-      location: { lat: 40.7128, long: -74.0060 },
+      location: { lat: 40.7128, long: -74.006 },
       api: {
         type: 'external-b-style',
         baseUrl: 'http://b.api',
         endpoints: { lookup: '/lookup', inventory: '/inventory' },
         defaultTransferCost: 0.7,
-        defaultTransferTime: 1.5
-      }
+        defaultTransferTime: 1.5,
+      },
     },
     {
       id: 'C',
@@ -31,9 +40,9 @@ describe('WarehouseRegistry', () => {
         baseUrl: 'http://c.api',
         endpoints: { categories: '/api/cats', items: '/api/items' },
         defaultTransferCost: 0.65,
-        defaultTransferTime: 2.5
-      }
-    }
+        defaultTransferTime: 2.5,
+      },
+    },
   ];
 
   let registry: WarehouseRegistry;
@@ -53,10 +62,7 @@ describe('WarehouseRegistry', () => {
     });
 
     it('should handle duplicate warehouse IDs by keeping the last one', () => {
-      const duplicateWarehouses = [
-        mockWarehouses[0],
-        { ...mockWarehouses[0], name: 'Updated Warehouse A' }
-      ];
+      const duplicateWarehouses = [mockWarehouses[0], { ...mockWarehouses[0], name: 'Updated Warehouse A' }];
       const duplicateRegistry = new WarehouseRegistry(duplicateWarehouses);
 
       const warehouse = duplicateRegistry.getWarehouse('A');
@@ -105,7 +111,7 @@ describe('WarehouseRegistry', () => {
     it('should return all registered warehouses', () => {
       const warehouses = registry.getAllWarehouses();
       expect(warehouses).toHaveLength(3);
-      expect(warehouses.map(w => w.id)).toEqual(['A', 'B', 'C']);
+      expect(warehouses.map((w) => w.id)).toEqual(['A', 'B', 'C']);
     });
 
     it('should return array copy, not reference', () => {
@@ -147,7 +153,7 @@ describe('WarehouseRegistry', () => {
       id: 'D',
       name: 'New Warehouse',
       location: { lat: 30.0, long: -90.0 },
-      api: { type: 'internal', defaultTransferCost: 0.3, defaultTransferTime: 1.0 }
+      api: { type: 'internal', defaultTransferCost: 0.3, defaultTransferTime: 1.0 },
     };
 
     it('should add new warehouse', () => {
@@ -161,7 +167,7 @@ describe('WarehouseRegistry', () => {
     it('should replace existing warehouse with same ID', () => {
       const updatedWarehouse = {
         ...mockWarehouses[0],
-        name: 'Updated Internal Warehouse'
+        name: 'Updated Internal Warehouse',
       };
 
       registry.addWarehouse(updatedWarehouse);
@@ -181,15 +187,19 @@ describe('WarehouseRegistry', () => {
           baseUrl: 'http://e.api',
           endpoints: { categories: '/categories', items: '/items' },
           defaultTransferCost: 0.6,
-          defaultTransferTime: 2.0
-        }
+          defaultTransferTime: 2.0,
+        },
       };
 
       registry.addWarehouse(externalWarehouse);
 
       const warehouse = registry.getWarehouse('E');
       expect(warehouse?.api.type).toBe('external-c-style');
-      expect((warehouse?.api as any).baseUrl).toBe('http://e.api');
+      if (warehouse && isExternalCStyleApi(warehouse.api)) {
+        expect(warehouse.api.baseUrl).toBe('http://e.api');
+      } else {
+        fail('Expected external-c-style API configuration');
+      }
     });
   });
 
@@ -237,17 +247,25 @@ describe('WarehouseRegistry', () => {
     it('should handle external-b-style API type', () => {
       const warehouse = registry.getWarehouse('B');
       expect(warehouse?.api.type).toBe('external-b-style');
-      expect((warehouse?.api as any).baseUrl).toBe('http://b.api');
-      expect((warehouse?.api as any).endpoints).toHaveProperty('lookup');
-      expect((warehouse?.api as any).endpoints).toHaveProperty('inventory');
+      if (warehouse && isExternalBStyleApi(warehouse.api)) {
+        expect(warehouse.api.baseUrl).toBe('http://b.api');
+        expect(warehouse.api.endpoints).toHaveProperty('lookup');
+        expect(warehouse.api.endpoints).toHaveProperty('inventory');
+      } else {
+        fail('Expected external-b-style API configuration');
+      }
     });
 
     it('should handle external-c-style API type', () => {
       const warehouse = registry.getWarehouse('C');
       expect(warehouse?.api.type).toBe('external-c-style');
-      expect((warehouse?.api as any).baseUrl).toBe('http://c.api');
-      expect((warehouse?.api as any).endpoints).toHaveProperty('categories');
-      expect((warehouse?.api as any).endpoints).toHaveProperty('items');
+      if (warehouse && isExternalCStyleApi(warehouse.api)) {
+        expect(warehouse.api.baseUrl).toBe('http://c.api');
+        expect(warehouse.api.endpoints).toHaveProperty('categories');
+        expect(warehouse.api.endpoints).toHaveProperty('items');
+      } else {
+        fail('Expected external-c-style API configuration');
+      }
     });
   });
 
@@ -259,17 +277,18 @@ describe('WarehouseRegistry', () => {
     });
 
     it('should handle null/undefined warehouse ID', () => {
-      expect(registry.hasWarehouse(null as any)).toBe(false);
-      expect(registry.hasWarehouse(undefined as any)).toBe(false);
-      expect(registry.getWarehouse(null as any)).toBeUndefined();
-      expect(registry.getWarehouse(undefined as any)).toBeUndefined();
+      // Testing with null and undefined values (bypassing type checking for testing error conditions)
+      expect(registry.hasWarehouse(null as unknown as string)).toBe(false);
+      expect(registry.hasWarehouse(undefined as unknown as string)).toBe(false);
+      expect(registry.getWarehouse(null as unknown as string)).toBeUndefined();
+      expect(registry.getWarehouse(undefined as unknown as string)).toBeUndefined();
     });
 
     it('should maintain warehouse ordering', () => {
       const orderedWarehouses = [
         { ...mockWarehouses[0], id: 'Z' },
         { ...mockWarehouses[1], id: 'A' },
-        { ...mockWarehouses[2], id: 'M' }
+        { ...mockWarehouses[2], id: 'M' },
       ];
       const orderedRegistry = new WarehouseRegistry(orderedWarehouses);
 
@@ -282,7 +301,7 @@ describe('WarehouseRegistry', () => {
         id: `W${i.toString().padStart(3, '0')}`,
         name: `Warehouse ${i}`,
         location: { lat: i * 0.1, long: i * -0.1 },
-        api: { type: 'internal', defaultTransferCost: 0.1 + i * 0.01, defaultTransferTime: 1 + i * 0.1 }
+        api: { type: 'internal', defaultTransferCost: 0.1 + i * 0.01, defaultTransferTime: 1 + i * 0.1 },
       }));
 
       const largeRegistry = new WarehouseRegistry(manyWarehouses);
@@ -294,12 +313,12 @@ describe('WarehouseRegistry', () => {
   });
 });
 
-describe('WarehouseConfigLoader', () => {
+describe('WarehouseConfigLoader functions', () => {
   describe('createRegistry', () => {
     it('should create registry from file path', () => {
       // This test requires a test config file to exist
       try {
-        const registry = WarehouseConfigLoader.createRegistry('./src/config/warehouses.json');
+        const registry = createWarehouseRegistry('./src/config/warehouses.json');
         expect(registry).toBeInstanceOf(WarehouseRegistry);
         expect(registry.getWarehouseIds().length).toBeGreaterThan(0);
       } catch (error) {
@@ -310,7 +329,7 @@ describe('WarehouseConfigLoader', () => {
 
     it('should create registry from environment', () => {
       try {
-        const registry = WarehouseConfigLoader.createRegistry();
+        const registry = createWarehouseRegistry();
         expect(registry).toBeInstanceOf(WarehouseRegistry);
       } catch (error) {
         // If environment config fails, should fall back to defaults
