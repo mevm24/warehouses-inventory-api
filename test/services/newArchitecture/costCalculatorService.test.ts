@@ -1,11 +1,11 @@
-import { CostCalculatorService } from '../../../src/services/costCalculatorService';
+import { UnifiedCostCalculatorService } from '../../../src/services/unifiedCalculatorService';
 import { NormalizedInventoryItem } from '../../../src/interfaces/general';
 
-describe('CostCalculatorService (New Architecture)', () => {
-  let costCalculator: CostCalculatorService;
+describe('UnifiedCostCalculatorService (V1 Mode)', () => {
+  let costCalculator: UnifiedCostCalculatorService;
 
   beforeEach(() => {
-    costCalculator = new CostCalculatorService();
+    costCalculator = new UnifiedCostCalculatorService(); // V1 mode (no registry)
   });
 
   describe('calculateCost', () => {

@@ -1,4 +1,4 @@
-import { CostCalculatorServiceV2, TimeCalculatorServiceV2 } from '../../../src/services/calculatorServiceV2';
+import { UnifiedCostCalculatorService, UnifiedTimeCalculatorService } from '../../../src/services/unifiedCalculatorService';
 import { IWarehouseRegistryService } from '../../../src/services/warehouseRegistryService';
 import { WarehouseConfig } from '../../../src/interfaces/warehouse';
 import { NormalizedInventoryItemV2 } from '../../../src/interfaces/general';
@@ -58,11 +58,11 @@ describe('CalculatorServiceV2', () => {
     jest.clearAllMocks();
   });
 
-  describe('CostCalculatorServiceV2', () => {
-    let calculator: CostCalculatorServiceV2;
+  describe('UnifiedCostCalculatorService (V2 Mode)', () => {
+    let calculator: UnifiedCostCalculatorService;
 
     beforeEach(() => {
-      calculator = new CostCalculatorServiceV2(mockWarehouseRegistry);
+      calculator = new UnifiedCostCalculatorService(mockWarehouseRegistry);
     });
 
     it('should calculate cost using item-specific transfer cost', () => {
@@ -138,11 +138,11 @@ describe('CalculatorServiceV2', () => {
     });
   });
 
-  describe('TimeCalculatorServiceV2', () => {
-    let calculator: TimeCalculatorServiceV2;
+  describe('UnifiedTimeCalculatorService (V2 Mode)', () => {
+    let calculator: UnifiedTimeCalculatorService;
 
     beforeEach(() => {
-      calculator = new TimeCalculatorServiceV2(mockWarehouseRegistry);
+      calculator = new UnifiedTimeCalculatorService(mockWarehouseRegistry);
     });
 
     it('should calculate time using warehouse default time for internal', () => {

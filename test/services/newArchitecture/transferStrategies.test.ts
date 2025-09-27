@@ -3,14 +3,13 @@ import {
   CheapestTransferStrategy,
   TransferStrategyFactory
 } from '../../../src/strategies/transferStrategies';
-import { CostCalculatorService } from '../../../src/services/costCalculatorService';
-import { TimeCalculatorService } from '../../../src/services/timeCalculatorService';
+import { UnifiedCostCalculatorService, UnifiedTimeCalculatorService } from '../../../src/services/unifiedCalculatorService';
 import { NormalizedInventoryItem } from '../../../src/interfaces/general';
 import { TransferRuleType } from '../../../src/types/warehouse';
 
 describe('Transfer Strategies (New Architecture)', () => {
-  let costCalculator: CostCalculatorService;
-  let timeCalculator: TimeCalculatorService;
+  let costCalculator: UnifiedCostCalculatorService;
+  let timeCalculator: UnifiedTimeCalculatorService;
   let strategyFactory: TransferStrategyFactory;
 
   const mockItem: NormalizedInventoryItem = {
@@ -25,8 +24,8 @@ describe('Transfer Strategies (New Architecture)', () => {
   };
 
   beforeEach(() => {
-    costCalculator = new CostCalculatorService();
-    timeCalculator = new TimeCalculatorService();
+    costCalculator = new UnifiedCostCalculatorService(); // V1 mode
+    timeCalculator = new UnifiedTimeCalculatorService(); // V1 mode
     strategyFactory = new TransferStrategyFactory(costCalculator, timeCalculator);
   });
 

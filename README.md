@@ -34,7 +34,7 @@ This project showcases a complete refactoring from monolithic code to a clean, m
 - **Real-time distance calculations** using Haversine formula
 - **External API integration** for warehouse B and C
 - **Dynamic warehouse registration** (V2) for unlimited warehouse support
-- **Comprehensive testing** (419 tests passing with 95% coverage)
+- **Comprehensive testing** (473 tests passing with 95% coverage)
 - **OpenAPI/Swagger documentation**
 
 ## 📁 Project Structure
@@ -47,27 +47,31 @@ src/
 ├── services/             # Business logic services
 │   ├── inventoryService.ts       # V1: Aggregated inventory service
 │   ├── transferService.ts        # V1: Transfer management
-│   ├── costCalculatorService.ts  # V1: Cost calculations
-│   ├── timeCalculatorService.ts  # V1: Time calculations
+│   ├── unifiedCalculatorService.ts # Unified: Cost & time calculations (V1 & V2)
 │   ├── warehouseServices.ts      # V1: Warehouse-specific services
 │   ├── inventoryServiceV2.ts     # V2: Dynamic inventory service
 │   ├── transferServiceV2.ts      # V2: N-warehouse transfer service
 │   ├── warehouseAdapterV2.ts     # V2: Dynamic warehouse adapters
-│   ├── calculatorServiceV2.ts    # V2: Dynamic calculations
 │   ├── warehouseRegistryService.ts # V2: Warehouse registration
+│   ├── validationService.ts      # V1: Request validation
+│   ├── validationServiceV2.ts    # V2: Request validation
 │   └── inventory.ts              # Legacy: Original monolithic service
 ├── strategies/           # Transfer strategy implementations
 │   ├── transferStrategies.ts     # V1 strategies
 │   └── transferStrategiesV2.ts   # V2 strategies
 ├── container/           # Dependency injection
-│   ├── container.ts     # V1 container
-│   └── containerV2.ts   # V2 container
+│   └── container.ts     # Unified container (V1 & V2)
 ├── interfaces/          # Type definitions and contracts
 │   ├── services.ts      # V1 service interfaces
 │   ├── servicesV2.ts    # V2 service interfaces
 │   ├── warehouse.ts     # Warehouse configuration
 │   └── general.ts       # Shared types
 ├── utils/              # Shared utilities
+│   ├── queryUtils.ts   # Query validation & classification
+│   ├── distance.ts     # Distance calculations
+│   └── category.ts     # Category classification
+├── errors/             # Error handling
+│   └── customErrors.ts # Custom error types & unified error handler
 ├── db/                 # Database connectors
 └── middlewares/        # Express middlewares
 ```
@@ -111,9 +115,9 @@ npm run test:coverage
 npm test -- --testPathPatterns=inventory
 ```
 
-**Test Coverage**: 419 tests with 95% coverage including:
-- 309 Unit tests (individual components)
-- 84 Integration tests (service interactions)
+**Test Coverage**: 473 tests with 95% coverage including:
+- 355 Unit tests (individual components)
+- 92 Integration tests (service interactions)
 - 26 E2E tests (full system scenarios)
 
 ## 📚 API Documentation
@@ -184,13 +188,30 @@ await warehouse.updateInventory(upc, quantity);
 | Aspect | Before | After |
 |--------|--------|-------|
 | **Responsibilities** | Single class (900+ lines) | Multiple focused services (<200 lines each) |
-| **Testability** | Tightly coupled | Independently testable (419 tests) |
+| **Testability** | Tightly coupled | Independently testable (473 tests) |
 | **Extensibility** | Hard-coded 3 warehouses | V1: 3 warehouses + V2: Dynamic N warehouses |
 | **Dependencies** | Direct instantiation | Dependency injection containers |
-| **Error Handling** | Basic try-catch | Custom error types with validation |
-| **Code Reuse** | Duplication | Shared utilities and adapters |
+| **Error Handling** | Basic try-catch | Unified error handling with custom types |
+| **Code Reuse** | Duplication | Shared utilities and unified services |
 | **Performance** | Sequential processing | Parallel warehouse queries (3x faster) |
 | **SOLID Compliance** | 0/5 principles | 5/5 principles fully implemented |
+
+## 🔧 Recent Architecture Improvements
+
+### ✅ **Query Service Simplification** (Latest)
+- **Removed**: Redundant `QueryService` and `QueryServiceV2` layers (~100 lines eliminated)
+- **Simplified**: Controllers now use `InventoryService` directly with shared `QueryUtils`
+- **Result**: Cleaner call flow and reduced complexity while maintaining functionality
+
+### ✅ **Calculator Service Unification** (Latest)
+- **Merged**: 4 calculator files → 1 unified `UnifiedCalculatorService` (~30 lines saved)
+- **Enhanced**: Single implementation supports both V1 (fixed) and V2 (dynamic) modes
+- **Result**: Better maintainability with unified calculation logic
+
+### ✅ **Error Handling Consolidation** (Latest)
+- **Created**: Unified `ErrorHandler` in `customErrors.ts`
+- **Eliminated**: 6 duplicate error handling blocks across controllers
+- **Result**: Consistent HTTP error responses and reduced code duplication
 
 ## 🚀 Performance Features
 

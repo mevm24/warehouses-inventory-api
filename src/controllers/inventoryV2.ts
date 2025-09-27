@@ -4,15 +4,17 @@ import { Container } from '../container/container';
 import { ITransferServiceV2 } from '../services/transferServiceV2';
 import { IWarehouseRegistryService } from '../services/warehouseRegistryService';
 import { IValidationServiceV2 } from '../services/validationServiceV2';
-import { IQueryServiceV2 } from '../services/queryServiceV2';
-import { ValidationError, NotFoundError } from '../errors/customErrors';
+import { IInventoryServiceV2 } from '../services/inventoryServiceV2';
+import { ErrorHandler } from '../errors/customErrors';
+import { QueryUtils } from '../utils/queryUtils';
+import { NotFoundError } from '../errors/customErrors';
 
 const router = Router();
 const container = Container.getInstance();
 const transferServiceV2: ITransferServiceV2 = container.getTransferServiceV2();
 const warehouseRegistryService: IWarehouseRegistryService = container.getWarehouseRegistryService();
 const validationServiceV2: IValidationServiceV2 = container.getValidationServiceV2();
-const queryServiceV2: IQueryServiceV2 = container.getQueryServiceV2();
+const inventoryServiceV2: IInventoryServiceV2 = container.getInventoryServiceV2();
 
 /**
  * @api {get} /warehouses Get list of all registered warehouses
@@ -39,20 +41,26 @@ router.get('/:warehouseId/:query', async (req: Request, res: Response) => {
   const { warehouseId, query } = req.params;
 
   try {
-    const items = await queryServiceV2.getInventoryFromWarehouseByQuery(warehouseId, query);
+    // Validate warehouse exists
+    if (!warehouseRegistryService.hasWarehouse(warehouseId)) {
+      throw new NotFoundError(`Warehouse "${warehouseId}" not found.`);
+    }
+
+    const { type, value } = QueryUtils.validateAndClassifyQuery(query);
+
+    let items;
+    if (type === 'upc') {
+      items = await inventoryServiceV2.getInventoryFromWarehouse(warehouseId, value);
+      QueryUtils.validateResultNotEmpty(items, QueryUtils.createUPCNotFoundError(value, warehouseId));
+    } else {
+      items = await inventoryServiceV2.getInventoryFromWarehouse(warehouseId, undefined, value);
+      QueryUtils.validateResultNotEmpty(items, QueryUtils.createCategoryNotFoundError(value, warehouseId));
+    }
+
     res.json(items);
   } catch (error) {
     console.error('Error fetching warehouse inventory:', error);
-
-    if (error instanceof ValidationError) {
-      return res.status(400).json({ message: error.message });
-    }
-
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({ message: error.message });
-    }
-
-    res.status(500).json({ message: 'Failed to retrieve inventory.' });
+    return ErrorHandler.handleError(error, res, 'Failed to retrieve inventory.');
   }
 });
 
@@ -64,20 +72,21 @@ router.get('/:query', async (req: Request, res: Response) => {
   const query = req.params.query;
 
   try {
-    const allItems = await queryServiceV2.getInventoryByQuery(query);
+    const { type, value } = QueryUtils.validateAndClassifyQuery(query);
+
+    let allItems;
+    if (type === 'upc') {
+      allItems = await inventoryServiceV2.getAllInventory(value);
+      QueryUtils.validateResultNotEmpty(allItems, QueryUtils.createUPCNotFoundError(value));
+    } else {
+      allItems = await inventoryServiceV2.getAllInventory(undefined, value);
+      QueryUtils.validateResultNotEmpty(allItems, QueryUtils.createCategoryNotFoundError(value));
+    }
+
     res.json(allItems);
   } catch (error) {
     console.error('Error fetching inventory:', error);
-
-    if (error instanceof ValidationError) {
-      return res.status(400).json({ message: error.message });
-    }
-
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({ message: error.message });
-    }
-
-    res.status(500).json({ message: 'Failed to retrieve inventory.' });
+    return ErrorHandler.handleError(error, res, 'Failed to retrieve inventory.');
   }
 });
 
@@ -101,14 +110,7 @@ router.post('/transfer', async (req: Request, res: Response) => {
     res.json({ message });
   } catch (error) {
     console.error('Error during inventory transfer:', error);
-
-    if (error instanceof ValidationError) {
-      return res.status(400).json({ message: error.message });
-    }
-
-    res.status(400).json({
-      message: error instanceof Error ? error.message : 'Failed to process transfer.'
-    });
+    return ErrorHandler.handleTransferError(error, res);
   }
 });
 
@@ -132,12 +134,7 @@ router.post('/warehouse/register', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error registering warehouse:', error);
-
-    if (error instanceof ValidationError) {
-      return res.status(400).json({ message: error.message });
-    }
-
-    res.status(500).json({ message: 'Failed to register warehouse.' });
+    return ErrorHandler.handleError(error, res, 'Failed to register warehouse.');
   }
 });
 

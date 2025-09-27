@@ -1,16 +1,16 @@
 // --- Express Router for Inventory Endpoints ---
 import { Router, Request, Response } from 'express';
 import { Container } from '../container/container';
-import { ITransferService } from '../interfaces/services';
+import { ITransferService, IInventoryService } from '../interfaces/services';
 import { IValidationService } from '../services/validationService';
-import { IQueryService } from '../services/queryService';
-import { ValidationError, NotFoundError } from '../errors/customErrors';
+import { ErrorHandler } from '../errors/customErrors';
+import { QueryUtils } from '../utils/queryUtils';
 
 const router = Router();
 const container = Container.getInstance();
 const transferService: ITransferService = container.getTransferService();
 const validationService: IValidationService = container.getValidationService();
-const queryService: IQueryService = container.getQueryService();
+const inventoryService: IInventoryService = container.getInventoryService();
 
 /**
  * @api {get} /:query Get inventory by UPC or category
@@ -19,20 +19,21 @@ router.get('/:query', async (req: Request, res: Response) => {
   const query = req.params.query;
 
   try {
-    const allItems = await queryService.getInventoryByQuery(query);
+    const { type, value } = QueryUtils.validateAndClassifyQuery(query);
+
+    let allItems;
+    if (type === 'upc') {
+      allItems = await inventoryService.getAllInventory(value);
+      QueryUtils.validateResultNotEmpty(allItems, QueryUtils.createUPCNotFoundError(value));
+    } else {
+      allItems = await inventoryService.getAllInventory(undefined, value);
+      QueryUtils.validateResultNotEmpty(allItems, QueryUtils.createCategoryNotFoundError(value));
+    }
+
     res.json(allItems);
   } catch (error) {
     console.error('Error fetching inventory:', error);
-
-    if (error instanceof ValidationError) {
-      return res.status(400).json({ message: error.message });
-    }
-
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({ message: error.message });
-    }
-
-    res.status(500).json({ message: 'Failed to retrieve inventory.' });
+    return ErrorHandler.handleError(error, res, 'Failed to retrieve inventory.');
   }
 });
 
@@ -47,14 +48,7 @@ router.post('/transfer', async (req: Request, res: Response) => {
     res.json({ message });
   } catch (error) {
     console.error('Error during inventory transfer:', error);
-
-    if (error instanceof ValidationError) {
-      return res.status(400).json({ message: error.message });
-    }
-
-    res.status(400).json({
-      message: error instanceof Error ? error.message : 'Failed to process transfer.'
-    });
+    return ErrorHandler.handleTransferError(error, res);
   }
 });
 
