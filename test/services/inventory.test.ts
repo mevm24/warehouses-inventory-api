@@ -1,5 +1,5 @@
 import { DBProvider } from '../../src/db/dbConnector';
-import type { NormalizedInventoryItem } from '../../src/interfaces';
+import type { NormalizedInventoryItem, WarehouseId } from '../../src/interfaces';
 import { InventoryProvider } from '../../src/services/inventory';
 import '../../src/data';
 
@@ -204,7 +204,7 @@ describe('InventoryProvider Service', () => {
   describe('performTransferWithNoFrom', () => {
     const validRequest = {
       // Testing null from value (bypassing type checking for testing error conditions)
-      from: null as unknown as WarehouseId,
+      from: null as unknown as 'A' | 'B' | 'C',
       to: 'B' as const,
       UPC: '12345678',
       quantity: 5,
@@ -252,7 +252,7 @@ describe('InventoryProvider Service', () => {
   describe('performTransferWithHaversine', () => {
     const validRequest = {
       // Testing null from value (bypassing type checking for testing error conditions)
-      from: null as unknown as WarehouseId,
+      from: null as unknown as 'A' | 'B' | 'C',
       to: 'B' as const,
       UPC: '12345678',
       quantity: 5,
