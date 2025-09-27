@@ -158,26 +158,41 @@ npm run ci
 
 ## 📚 API Documentation
 
-The API includes Swagger/OpenAPI documentation available at:
-- **Development**: `http://localhost:3000/docs`
+**Interactive Swagger Documentation**: `http://localhost:3000/docs`
 
-For detailed SOLID principles migration documentation, see: [`docs/SOLID_MIGRATION.md`](docs/SOLID_MIGRATION.md)
+### 🔧 Documentation Architecture
+- **Primary**: Clean YAML specification (`docs/api-spec.yaml`)
+- **Fallback**: Inline TypeScript definitions for reliability
+- **Features**: Complete endpoint coverage, request/response schemas, examples, and interactive testing
 
 ### Available Endpoints
 
 #### V1 API (Fixed 3-Warehouse Architecture)
-- `GET /api/v1/inventory/{query}` - Get inventory by UPC or category
-- `POST /api/v1/inventory/transfer` - Transfer inventory between warehouses
-- `POST /api/v1/inventory/optimal` - Auto-select optimal source warehouse
+- `GET /api/v1/inventory/{query}` - Get inventory by UPC or category across warehouses A, B, C
+- `POST /api/v1/inventory/transfer` - Transfer inventory between specific warehouses
 
 #### V2 API (Dynamic N-Warehouse Architecture)
-- `GET /api/v2/inventory/{query}` - Get inventory by UPC or category
-- `GET /api/v2/inventory/{warehouse}/{query}` - Get inventory from specific warehouse
-- `POST /api/v2/inventory/transfer` - Transfer inventory between warehouses
-- `POST /api/v2/inventory/optimal` - Auto-select optimal source warehouse
-- `POST /api/v2/inventory/warehouse/register` - Register new warehouse dynamically
-- `DELETE /api/v2/inventory/warehouse/{warehouseId}` - Unregister warehouse
+
+**Inventory Management:**
+- `GET /api/v2/inventory/{query}` - Get inventory by UPC or category across all warehouses
+- `GET /api/v2/inventory/{warehouseId}/{query}` - Get inventory from specific warehouse
+
+**Advanced Transfers:**
+- `POST /api/v2/inventory/transfer` - Transfer with auto-optimization (optional source selection)
+
+**Warehouse Management:**
 - `GET /api/v2/inventory/warehouses` - List all registered warehouses
+- `POST /api/v2/inventory/warehouse/register` - Register new warehouse dynamically
+- `DELETE /api/v2/inventory/warehouse/{id}` - Unregister existing warehouse
+
+### 📋 API Features
+- **Authentication**: Bearer token required for all `/api/*` endpoints
+- **Auto-optimization**: V2 transfers support automatic source warehouse selection
+- **Validation**: Comprehensive request validation with detailed error responses
+- **Examples**: Real-world examples for all request/response formats
+- **Interactive Testing**: Full Swagger UI with "Try it out" functionality
+
+For detailed SOLID principles migration documentation, see: [`docs/SOLID_MIGRATION.md`](docs/SOLID_MIGRATION.md)
 
 ## 🏭 Architecture Patterns
 
@@ -234,7 +249,15 @@ await warehouse.updateInventory(upc, quantity);
 
 ## 🔧 Recent Architecture Improvements
 
-### ✅ **Code Quality Modernization with Biome.js** (Latest)
+### ✅ **Comprehensive API Documentation with Swagger** (Latest)
+- **Implemented**: Complete OpenAPI 3.0 specification with dual-format approach
+- **Structure**: Clean YAML primary specification (`docs/api-spec.yaml`) + reliable TypeScript fallback
+- **Coverage**: All V1 and V2 endpoints with detailed schemas, examples, and error responses
+- **Approach**: Replaced verbose JSDoc comments with maintainable YAML configuration
+- **Features**: Interactive Swagger UI, parameter validation, request/response examples
+- **Result**: Professional API documentation accessible at `/docs` without authentication
+
+### ✅ **Code Quality Modernization with Biome.js**
 - **Implemented**: [Biome.js](https://biomejs.dev/) for fast, modern linting and formatting
 - **Transformed**: Static-only classes → Pure functions for better testability
 - **Consolidated**: All interfaces into organized modules with logical grouping

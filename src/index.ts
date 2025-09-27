@@ -7,7 +7,7 @@ import { PORT } from './constants';
 import inventoryRoutes from './controllers/inventory';
 import inventoryRoutesV2 from './controllers/inventoryV2';
 import { authMiddleware } from './middlewares/auth';
-import { swaggerOptions } from './swagger';
+import { swaggerSpec } from './swagger';
 import './data/index'; // Initialize mock data and APIs
 
 // Re-export for controllers that import from index
@@ -18,17 +18,19 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(morgan('dev')); // Logging
-app.use(authMiddleware); // Apply auth to all routes
 
-// Root route for API documentation or status check
+// Public routes (no auth required)
 app.get('/', (_req: Request, res: Response) => {
-  res.send('Inventory API is running.');
+  res.send('Inventory API is running. Visit <a href="/docs">/docs</a> for API documentation.');
 });
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// API Routes
+// Apply auth middleware to API routes only
+app.use('/api', authMiddleware);
+
+// API Routes (protected by auth)
 app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v2/inventory', inventoryRoutesV2);
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerOptions));
 
 // Generic Error Handling Middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

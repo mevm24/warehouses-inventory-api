@@ -16,9 +16,7 @@ const transferService: ITransferService = container.getTransferService();
 const validationService: IValidationService = container.getValidationService();
 const inventoryService: IInventoryService = container.getInventoryService();
 
-/**
- * @api {get} /:query Get inventory by UPC or category
- */
+// GET /api/v1/inventory/{query} - Get inventory by UPC or category
 router.get('/:query', async (req: Request, res: Response) => {
   const query = req.params.query;
 
@@ -41,9 +39,7 @@ router.get('/:query', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * @api {post} /transfer Transfer inventory
- */
+// POST /api/v1/inventory/transfer - Transfer inventory between warehouses
 router.post('/transfer', async (req: Request, res: Response) => {
   try {
     const transferRequest = validationService.validateTransferRequest(req.body);

@@ -1,0 +1,462 @@
+openapi: 3.0.0
+info:
+  title: Warehouses Inventory Management API
+  version: 1.0.0
+  description: A comprehensive REST API for managing inventory across multiple warehouses
+  contact:
+    name: API Support
+    url: https://github.com/mevm24/warehouses-inventory-api
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Any token value for development
+
+  schemas:
+    TransferRequest:
+      type: object
+      required: [from, to, UPC, quantity, rule]
+      properties:
+        from:
+          type: string
+          enum: [A, B, C]
+          example: A
+        to:
+          type: string
+          enum: [A, B, C]
+          example: B
+        UPC:
+          type: string
+          pattern: '^\d{8,12}$'
+          example: "12345678"
+        quantity:
+          type: integer
+          minimum: 1
+          example: 5
+        rule:
+          type: string
+          enum: [cheapest, fastest]
+          example: cheapest
+
+    InventoryItem:
+      type: object
+      properties:
+        source:
+          type: string
+          example: A
+        upc:
+          type: string
+          example: "12345678"
+        category:
+          type: string
+          example: widgets
+        name:
+          type: string
+          example: Test Widget
+        quantity:
+          type: integer
+          example: 15
+        transferCost:
+          type: number
+          example: 0.3
+        transferTime:
+          type: number
+          example: 2
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid UPC format
+
+    Success:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Transfer completed successfully
+
+paths:
+  /api/v1/inventory/{query}:
+    get:
+      summary: Get inventory by UPC or category
+      tags: [V1 - Inventory]
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "12345678"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/inventory/transfer:
+    post:
+      summary: Transfer inventory between warehouses
+      tags: [V1 - Transfers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Transfer completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v2/inventory/warehouses:
+    get:
+      summary: Get all registered warehouses
+      tags: [V2 - Warehouse Management]
+      responses:
+        '200':
+          description: List of warehouses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: A
+                    name:
+                      type: string
+                      example: Internal Warehouse
+                    location:
+                      type: object
+                      properties:
+                        lat:
+                          type: number
+                          example: 40.7128
+                        long:
+                          type: number
+                          example: -74.006
+                    type:
+                      type: string
+                      example: internal
+
+  /api/v2/inventory/{warehouseId}/{query}:
+    get:
+      summary: Get inventory from specific warehouse by UPC or category
+      tags: [V2 - Inventory Management]
+      parameters:
+        - name: warehouseId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "A"
+          description: The warehouse ID to query
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "12345678"
+          description: UPC code (8-12 digits) or category name
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Warehouse or inventory not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v2/inventory/{query}:
+    get:
+      summary: Get inventory across all warehouses by UPC or category
+      tags: [V2 - Inventory Management]
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "12345678"
+          description: UPC code (8-12 digits) or category name
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Inventory not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v2/inventory/transfer:
+    post:
+      summary: Transfer inventory between warehouses with advanced features
+      tags: [V2 - Transfers]
+      description: |
+        Transfer inventory between warehouses. Supports both specific source warehouse
+        and automatic optimal source selection based on cost/speed preferences.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to, UPC, quantity, rule]
+              properties:
+                from:
+                  type: string
+                  description: Source warehouse ID (optional - if not provided, optimal source will be selected)
+                  example: "A"
+                to:
+                  type: string
+                  description: Destination warehouse ID
+                  example: "B"
+                UPC:
+                  type: string
+                  pattern: '^\\d{8,12}$'
+                  description: Universal Product Code (8-12 digits)
+                  example: "12345678"
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: Quantity to transfer
+                  example: 5
+                rule:
+                  type: string
+                  enum: [cheapest, fastest]
+                  description: Transfer optimization rule
+                  example: "cheapest"
+      responses:
+        '200':
+          description: Transfer completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v2/inventory/warehouse/register:
+    post:
+      summary: Register a new warehouse
+      tags: [V2 - Warehouse Management]
+      description: |
+        Register a new warehouse in the system with API configuration.
+        Supports different warehouse types (internal, external API, mock).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, name, location, api]
+              properties:
+                id:
+                  type: string
+                  description: Unique warehouse identifier
+                  example: "F"
+                name:
+                  type: string
+                  description: Human-readable warehouse name
+                  example: "New Distribution Center"
+                location:
+                  type: object
+                  required: [lat, long]
+                  properties:
+                    lat:
+                      type: number
+                      description: Latitude coordinate
+                      example: 40.7128
+                    long:
+                      type: number
+                      description: Longitude coordinate
+                      example: -74.006
+                api:
+                  type: object
+                  required: [type]
+                  properties:
+                    type:
+                      type: string
+                      enum: [internal, external, mock]
+                      description: Type of warehouse API
+                      example: "external"
+                    baseUrl:
+                      type: string
+                      description: Base URL for external APIs
+                      example: "https://api.warehouse-f.com"
+                    apiKey:
+                      type: string
+                      description: API key for external APIs
+                      example: "key-12345"
+      responses:
+        '200':
+          description: Warehouse registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Warehouse "F" registered successfully.'
+                  warehouse:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "F"
+                      name:
+                        type: string
+                        example: "New Distribution Center"
+                      location:
+                        type: object
+                        properties:
+                          lat:
+                            type: number
+                            example: 40.7128
+                          long:
+                            type: number
+                            example: -74.006
+                      type:
+                        type: string
+                        example: "external"
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v2/inventory/warehouse/{id}:
+    delete:
+      summary: Unregister an existing warehouse
+      tags: [V2 - Warehouse Management]
+      description: Remove a warehouse from the system registry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "F"
+          description: The warehouse ID to unregister
+      responses:
+        '200':
+          description: Warehouse unregistered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Warehouse "F" unregistered successfully.'
+        '404':
+          description: Warehouse not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Warehouse "F" not found.'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Failed to unregister warehouse."

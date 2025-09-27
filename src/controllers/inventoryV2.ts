@@ -23,9 +23,7 @@ const warehouseRegistryService: IWarehouseRegistryService = container.getWarehou
 const validationServiceV2: IValidationServiceV2 = container.getValidationServiceV2();
 const inventoryServiceV2: IInventoryServiceV2 = container.getInventoryServiceV2();
 
-/**
- * @api {get} /warehouses Get list of all registered warehouses
- */
+// GET /api/v2/inventory/warehouses - Get all registered warehouses
 router.get('/warehouses', async (_req: Request, res: Response) => {
   try {
     const warehouses = warehouseRegistryService.getAllWarehouses();
@@ -43,9 +41,7 @@ router.get('/warehouses', async (_req: Request, res: Response) => {
   }
 });
 
-/**
- * @api {get} /:warehouseId/:query Get inventory from specific warehouse
- */
+// GET /api/v2/inventory/{warehouseId}/{query} - Get inventory from specific warehouse
 router.get('/:warehouseId/:query', async (req: Request, res: Response) => {
   const { warehouseId, query } = req.params;
 
@@ -73,9 +69,7 @@ router.get('/:warehouseId/:query', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * @api {get} /:query Get inventory across all warehouses
- */
+// GET /api/v2/inventory/{query} - Get inventory across all warehouses
 router.get('/:query', async (req: Request, res: Response) => {
   const query = req.params.query;
 
