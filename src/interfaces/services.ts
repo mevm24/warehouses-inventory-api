@@ -18,7 +18,7 @@ export interface IInventoryService {
 
 export interface IWarehouseService {
   getInventory(upc?: string, category?: string): Promise<NormalizedInventoryItem[]>;
-  updateInventory(upc: string, quantityChange: number): Promise<void>;
+  updateInventory(upc: string, quantityChange: number): Promise<number>; // Returns actual quantity changed
 }
 
 export interface ITransferService {

@@ -29,8 +29,8 @@ export class WarehouseAService implements IWarehouseService {
     }));
   }
 
-  async updateInventory(upc: string, quantityChange: number): Promise<void> {
-    await this.databaseConnector.updateInternalInventory(upc, quantityChange);
+  async updateInventory(upc: string, quantityChange: number): Promise<number> {
+    return await this.databaseConnector.updateInternalInventory(upc, quantityChange);
   }
 }
 
@@ -73,10 +73,14 @@ export class WarehouseBService implements IWarehouseService {
     }
   }
 
-  async updateInventory(upc: string, quantityChange: number): Promise<void> {
+  async updateInventory(upc: string, quantityChange: number): Promise<number> {
+    // For external warehouse B, we simulate the update and return the actual change
+    // In reality, this would call the external API and get the actual deducted amount
     console.log(
-      `External API call would be made to update warehouse B inventory for UPC ${upc}, reducing by ${quantityChange} units`
+      `External API call would be made to update warehouse B inventory for UPC ${upc}, changing by ${quantityChange} units`
     );
+    // Return the requested change as we assume external API handles inventory
+    return quantityChange;
   }
 }
 
@@ -110,10 +114,14 @@ export class WarehouseCService implements IWarehouseService {
     }
   }
 
-  async updateInventory(upc: string, quantityChange: number): Promise<void> {
+  async updateInventory(upc: string, quantityChange: number): Promise<number> {
+    // For external warehouse C, we simulate the update and return the actual change
+    // In reality, this would call the external API and get the actual deducted amount
     console.log(
-      `External API call would be made to update warehouse C inventory for UPC ${upc}, reducing by ${quantityChange} units`
+      `External API call would be made to update warehouse C inventory for UPC ${upc}, changing by ${quantityChange} units`
     );
+    // Return the requested change as we assume external API handles inventory
+    return quantityChange;
   }
 }
 

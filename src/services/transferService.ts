@@ -8,6 +8,7 @@ import type {
 } from '../interfaces';
 import type { TransferStrategyFactory } from '../strategies/transferStrategies';
 import { haversineDistance } from '../utils/distance';
+import { transferInventoryBetweenWarehouses } from '../utils/inventoryUtils';
 import type { WarehouseServiceFactory } from './warehouseServices';
 
 export class TransferService implements ITransferService {
@@ -31,7 +32,7 @@ export class TransferService implements ITransferService {
 
     this.validateStockAvailability(sourceInventory, quantity, from);
 
-    const transferResult = await this.executeTransfer(from, to, UPC, quantity, rule, sourceInventory[0]);
+    const transferResult = await this.executeTransfer(from, to, UPC, quantity, rule, sourceInventory);
     return transferResult;
   }
 
@@ -57,7 +58,7 @@ export class TransferService implements ITransferService {
       UPC,
       quantity,
       rule,
-      optimalSource.item
+      optimalSource.items
     );
     return transferResult;
   }
@@ -92,10 +93,10 @@ export class TransferService implements ITransferService {
     quantity: number,
     rule: string,
     destinationLocation: WarehouseLocation
-  ): { warehouse: string; item: NormalizedInventoryItem } | null {
+  ): { warehouse: string; items: NormalizedInventoryItem[] } | null {
     const inventoryBySource = this.groupInventoryBySource(allInventory);
     let bestScore = Infinity;
-    let optimalSource: { warehouse: string; item: NormalizedInventoryItem } | null = null;
+    let optimalSource: { warehouse: string; items: NormalizedInventoryItem[] } | null = null;
 
     for (const [source, items] of inventoryBySource.entries()) {
       if (source === destination) continue;
@@ -107,7 +108,7 @@ export class TransferService implements ITransferService {
 
         if (score < bestScore) {
           bestScore = score;
-          optimalSource = { warehouse: source, item: items[0] };
+          optimalSource = { warehouse: source, items: items };
         }
       }
     }
@@ -150,7 +151,7 @@ export class TransferService implements ITransferService {
     UPC: string,
     quantity: number,
     rule: string,
-    item: NormalizedInventoryItem
+    items: NormalizedInventoryItem[]
   ): Promise<string> {
     const sourceLocation = WAREHOUSE_LOCATIONS[from as 'A' | 'B' | 'C'];
     const destinationLocation = WAREHOUSE_LOCATIONS[to as 'A' | 'B' | 'C'];
@@ -163,10 +164,14 @@ export class TransferService implements ITransferService {
     );
 
     const strategy = this.strategyFactory.create(rule);
-    const { label: metricLabel } = strategy.calculate(distance, item);
+    // Use the first item for calculating the transfer metric (as all items from same source have same properties)
+    const { label: metricLabel } = strategy.calculate(distance, items[0]);
 
     const sourceWarehouse = this.warehouseFactory.create(from);
-    await sourceWarehouse.updateInventory(UPC, -quantity);
+    const destinationWarehouse = this.warehouseFactory.create(to);
+
+    // Transfer inventory between warehouses using shared utility
+    await transferInventoryBetweenWarehouses(sourceWarehouse, destinationWarehouse, UPC, quantity, items);
 
     console.log(`Transfer completed: ${quantity} units of UPC ${UPC} from warehouse ${from} to ${to}.`);
     console.log(`Distance: ${distance.toFixed(2)} miles`);

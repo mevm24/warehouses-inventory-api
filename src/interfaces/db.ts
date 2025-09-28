@@ -5,5 +5,5 @@ export interface DBConnector {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   fetchInternalInventory(): Promise<InternalInventoryItem[]>;
-  updateInternalInventory(upc: string, quantityChange: number): Promise<void>;
+  updateInternalInventory(upc: string, quantityChange: number): Promise<number>; // Returns actual quantity changed
 }

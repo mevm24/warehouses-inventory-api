@@ -79,11 +79,22 @@ describe('Database Connector', () => {
       );
     });
 
-    it('should throw error for insufficient stock', async () => {
+    it('should limit deduction to available stock', async () => {
       const upc = '99990000';
       const quantityChange = -1000; // More than available
 
-      await expect(updateInternalInventory(upc, quantityChange)).rejects.toThrow(`Insufficient stock for UPC ${upc}.`);
+      const originalInventory = await fetchInternalInventory();
+      const originalItem = originalInventory.find((item) => item.upc === upc);
+      const originalQuantity = originalItem?.quantity ?? 0;
+
+      // Should return the actual amount deducted (limited to available stock)
+      const actuallyDeducted = await updateInternalInventory(upc, quantityChange);
+      expect(actuallyDeducted).toBe(-originalQuantity); // Should be -5 (negative because it's a deduction)
+
+      // Verify the item now has 0 quantity
+      const updatedInventory = await fetchInternalInventory();
+      const updatedItem = updatedInventory.find((item) => item.upc === upc);
+      expect(updatedItem?.quantity).toBe(0);
     });
 
     it('should handle zero quantity change', async () => {

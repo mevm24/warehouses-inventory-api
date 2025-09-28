@@ -41,7 +41,7 @@ export interface WarehouseConfig {
  */
 export interface IWarehouseAdapter {
   getInventory(upc?: string, category?: string): Promise<NormalizedInventoryItemV2[]>;
-  updateInventory(upc: string, quantityChange: number): Promise<void>;
+  updateInventory(upc: string, quantityChange: number): Promise<number>; // Returns actual quantity changed
 }
 
 /**

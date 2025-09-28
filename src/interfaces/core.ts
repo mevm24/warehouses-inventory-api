@@ -91,3 +91,7 @@ export interface QueryValidationResult {
   type: 'upc' | 'category';
   value: string;
 }
+
+export interface InventoryUpdater {
+  updateInventory(upc: string, quantityChange: number): Promise<number>;
+}

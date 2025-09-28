@@ -3,11 +3,15 @@ import { WarehouseRegistry } from '../../src/config/warehouseRegistry';
 import type { WarehouseApiConfig, WarehouseConfig } from '../../src/interfaces/warehouse';
 
 // Type guards for external API configurations
-function isExternalBStyleApi(api: WarehouseApiConfig): api is WarehouseApiConfig & { baseUrl: string; endpoints: { lookup: string; inventory: string } } {
+function isExternalBStyleApi(
+  api: WarehouseApiConfig
+): api is WarehouseApiConfig & { baseUrl: string; endpoints: { lookup: string; inventory: string } } {
   return api.type === 'external-b-style' && 'baseUrl' in api && 'endpoints' in api;
 }
 
-function isExternalCStyleApi(api: WarehouseApiConfig): api is WarehouseApiConfig & { baseUrl: string; endpoints: { categories: string; items: string } } {
+function isExternalCStyleApi(
+  api: WarehouseApiConfig
+): api is WarehouseApiConfig & { baseUrl: string; endpoints: { categories: string; items: string } } {
   return api.type === 'external-c-style' && 'baseUrl' in api && 'endpoints' in api;
 }
 
@@ -157,7 +161,7 @@ describe('WarehouseRegistry', () => {
     };
 
     it('should add new warehouse', () => {
-      registry.addWarehouse(newWarehouse);
+      registry.registerWarehouse(newWarehouse);
 
       expect(registry.hasWarehouse('D')).toBe(true);
       expect(registry.getWarehouseIds()).toContain('D');
@@ -170,7 +174,7 @@ describe('WarehouseRegistry', () => {
         name: 'Updated Internal Warehouse',
       };
 
-      registry.addWarehouse(updatedWarehouse);
+      registry.registerWarehouse(updatedWarehouse);
 
       const warehouse = registry.getWarehouse('A');
       expect(warehouse?.name).toBe('Updated Internal Warehouse');
@@ -191,7 +195,7 @@ describe('WarehouseRegistry', () => {
         },
       };
 
-      registry.addWarehouse(externalWarehouse);
+      registry.registerWarehouse(externalWarehouse);
 
       const warehouse = registry.getWarehouse('E');
       expect(warehouse?.api.type).toBe('external-c-style');

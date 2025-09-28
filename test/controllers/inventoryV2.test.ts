@@ -154,7 +154,7 @@ describe('Inventory V2 Controller', () => {
           expect(response.body[0]).toHaveProperty('upc', '12345678');
 
           // Should have items from multiple warehouses
-          const sources = response.body.map((item: any) => item.source);
+          const sources = response.body.map((item: Record<string, unknown>) => item.source);
           expect(sources.length).toBeGreaterThan(0);
         }
       });
@@ -166,7 +166,7 @@ describe('Inventory V2 Controller', () => {
         expect(response.body).toBeInstanceOf(Array);
 
         if (response.body.length > 0) {
-          expect(response.body.every((item: any) => item.category === 'widgets')).toBe(true);
+          expect(response.body.every((item: Record<string, unknown>) => item.category === 'widgets')).toBe(true);
         }
       });
 
@@ -494,7 +494,7 @@ describe('Inventory V2 Controller', () => {
       ];
 
       for (const endpoint of endpoints) {
-        let response;
+        let response: request.Response | undefined;
         if (endpoint.method === 'get') {
           response = await request(app).get(endpoint.path);
         } else if (endpoint.method === 'post') {

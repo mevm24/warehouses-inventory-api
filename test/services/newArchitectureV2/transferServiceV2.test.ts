@@ -326,7 +326,7 @@ describe('TransferServiceV2', () => {
       mockStrategyFactory.create.mockReturnValue(mockStrategy);
       mockStrategy.calculate.mockReturnValue({ metric: 2.5, label: 'Time: 2.50 hours' });
 
-      const result = await transferService.performOptimalTransfer(request);
+      const result = await transferService.performOptimalTransferV2(request);
 
       expect(result).toContain('Transfer of 5 units');
       expect(result).toContain('Time: 2.50 hours');

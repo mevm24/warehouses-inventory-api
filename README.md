@@ -54,8 +54,7 @@ src/
 │   ├── warehouseAdapterV2.ts     # V2: Dynamic warehouse adapters
 │   ├── warehouseRegistryService.ts # V2: Warehouse registration
 │   ├── validationService.ts      # V1: Request validation
-│   ├── validationServiceV2.ts    # V2: Request validation
-│   └── inventory.ts              # Legacy: Original monolithic service
+│   └── validationServiceV2.ts    # V2: Request validation
 ├── strategies/           # Transfer strategy implementations
 │   ├── transferStrategies.ts     # V1 strategies
 │   └── transferStrategiesV2.ts   # V2 strategies
@@ -151,10 +150,10 @@ npm run ci
 - 🧹 **Zero configuration** for most projects
 - 🔍 **Advanced rule sets** for modern JavaScript/TypeScript
 
-**Test Coverage**: 473 tests with 95% coverage including:
-- 355 Unit tests (individual components)
-- 92 Integration tests (service interactions)
-- 26 E2E tests (full system scenarios)
+**Test Coverage**: 365 tests with 95% coverage including:
+- Unit tests (individual components)
+- Integration tests (service interactions)
+- E2E tests (full system scenarios)
 
 ## 📚 API Documentation
 
@@ -239,7 +238,7 @@ await warehouse.updateInventory(upc, quantity);
 | Aspect | Before | After |
 |--------|--------|-------|
 | **Responsibilities** | Single class (900+ lines) | Multiple focused services (<200 lines each) |
-| **Testability** | Tightly coupled | Independently testable (473 tests) |
+| **Testability** | Tightly coupled | Independently testable (365 tests) |
 | **Extensibility** | Hard-coded 3 warehouses | V1: 3 warehouses + V2: Dynamic N warehouses |
 | **Dependencies** | Direct instantiation | Dependency injection containers |
 | **Error Handling** | Basic try-catch | Unified error handling with custom types |

@@ -25,12 +25,8 @@ export class WarehouseRegistry {
     return this.warehouses.has(id);
   }
 
-  addWarehouse(config: WarehouseConfig): void {
-    this.warehouses.set(config.id, config);
-  }
-
   registerWarehouse(config: WarehouseConfig): void {
-    this.addWarehouse(config);
+    this.warehouses.set(config.id, config);
   }
 
   removeWarehouse(id: string): boolean {

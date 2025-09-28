@@ -40,8 +40,8 @@ export class InternalWarehouseAdapter implements IWarehouseAdapter {
     }));
   }
 
-  async updateInventory(upc: string, quantityChange: number): Promise<void> {
-    await this.dbConnector.updateInternalInventory(upc, quantityChange);
+  async updateInventory(upc: string, quantityChange: number): Promise<number> {
+    return await this.dbConnector.updateInternalInventory(upc, quantityChange);
   }
 }
 
@@ -98,10 +98,12 @@ export class BStyleWarehouseAdapter implements IWarehouseAdapter {
     }
   }
 
-  async updateInventory(upc: string, quantityChange: number): Promise<void> {
+  async updateInventory(upc: string, quantityChange: number): Promise<number> {
     console.log(
       `External API call would be made to update warehouse ${this.config.id} inventory for UPC ${upc}, changing by ${quantityChange} units`
     );
+    // Return the requested change as we assume external API handles inventory
+    return quantityChange;
   }
 }
 
@@ -149,10 +151,12 @@ export class CStyleWarehouseAdapter implements IWarehouseAdapter {
     }
   }
 
-  async updateInventory(upc: string, quantityChange: number): Promise<void> {
+  async updateInventory(upc: string, quantityChange: number): Promise<number> {
     console.log(
       `External API call would be made to update warehouse ${this.config.id} inventory for UPC ${upc}, changing by ${quantityChange} units`
     );
+    // Return the requested change as we assume external API handles inventory
+    return quantityChange;
   }
 }
 

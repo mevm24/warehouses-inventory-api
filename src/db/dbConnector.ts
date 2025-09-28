@@ -16,18 +16,23 @@ export const fetchInternalInventory = async (): Promise<InternalInventoryItem[]>
   });
 };
 
-export const updateInternalInventory = async (upc: string, quantityChange: number): Promise<void> => {
+export const updateInternalInventory = async (upc: string, quantityChange: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       const item = internalInventory.find((i) => i.upc === upc);
       if (!item) {
         return reject(new Error(`Item with UPC ${upc} not found in Internal Inventory.`));
       }
-      if (item.quantity + quantityChange < 0) {
-        return reject(new Error(`Insufficient stock for UPC ${upc}.`));
-      }
-      item.quantity += quantityChange;
-      resolve();
+
+      // If deducting (negative change), limit to available quantity
+      // E.g., if trying to deduct -10 but only have 5, actually deduct -5
+      const actualChange =
+        quantityChange < 0
+          ? Math.max(quantityChange, -item.quantity) // Math.max(-10, -5) = -5
+          : quantityChange;
+
+      item.quantity += actualChange;
+      resolve(actualChange);
     }, 50);
   });
 };
@@ -43,7 +48,7 @@ export class DBProvider implements DBConnector {
   async fetchInternalInventory() {
     return await fetchInternalInventory();
   }
-  async updateInternalInventory(upc: string, quantityChange: number) {
+  async updateInternalInventory(upc: string, quantityChange: number): Promise<number> {
     return await updateInternalInventory(upc, quantityChange);
   }
 }
